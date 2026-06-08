@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>WuDE Prüfungstrainer</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#f0f4f8;--surf:#fff;--txt:#1a2536;--mt:#5a7089;--lt:#94aec4;--brd:#dde4ed;--sh:0 2px 12px rgba(26,37,54,.09)}
+body{background:var(--bg);color:var(--txt);font-family:"Space Grotesk",sans-serif;min-height:100vh}
+.scr{display:none;min-height:100vh;padding:24px 16px}.scr.on{display:flex;flex-direction:column;align-items:center}
+.card{background:var(--surf);border:1px solid var(--brd);border-radius:10px;box-shadow:var(--sh);width:100%;max-width:700px;padding:28px}
+h1{font-size:clamp(1.5rem,4vw,2.2rem);font-weight:700;line-height:1.1;margin-bottom:6px}
+h1 em{font-style:italic;color:#c0392b}
+.sub{color:var(--mt);font-size:.9rem;margin-bottom:24px}
+.mode-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
+.mode-btn{border:2px solid var(--brd);border-radius:8px;padding:16px;cursor:pointer;background:var(--surf);text-align:left;transition:all .15s}
+.mode-btn:hover,.mode-btn.sel{border-color:#c0392b;background:#fdf2f2}
+.mode-btn strong{display:block;font-size:.92rem;margin-bottom:4px}
+.mode-btn small{font-size:.76rem;color:var(--mt)}
+.topic-grid{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:18px}
+.tc{font-family:"JetBrains Mono",monospace;font-size:.55rem;letter-spacing:.08em;text-transform:uppercase;padding:5px 10px;border-radius:4px;cursor:pointer;border:1.5px solid;transition:all .15s;font-weight:500;background:var(--surf)}
+.tc.sel{color:#fff!important}
+.btn{font-family:"JetBrains Mono",monospace;font-size:.62rem;letter-spacing:.1em;text-transform:uppercase;padding:11px 24px;border-radius:6px;cursor:pointer;border:none;transition:all .15s}
+.btn-p{background:var(--txt);color:#fff}.btn-p:hover{background:#2d3748}
+.btn-s{background:var(--bg);color:var(--txt);border:1.5px solid var(--brd)}.btn-s:hover{border-color:var(--txt)}
+.topbar{width:100%;max-width:700px;display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap}
+.progress-wrap{flex:1;height:6px;background:var(--brd);border-radius:3px;min-width:80px}
+.progress-fill{height:100%;border-radius:3px;background:var(--txt);transition:width .3s}
+.prog-lbl{font-family:"JetBrains Mono",monospace;font-size:.58rem;color:var(--mt);white-space:nowrap}
+.timer-wrap{height:5px;border-radius:3px;background:var(--brd);margin-bottom:18px;overflow:hidden}
+.timer-fill{height:100%;border-radius:3px;transition:width 1s linear}
+.cat-badge{font-family:"JetBrains Mono",monospace;font-size:.54rem;letter-spacing:.1em;text-transform:uppercase;padding:3px 9px;border-radius:4px;margin-bottom:14px;display:inline-block}
+.q-text{font-size:1.05rem;font-weight:600;line-height:1.55;margin-bottom:20px}
+.q-type{font-family:"JetBrains Mono",monospace;font-size:.56rem;color:var(--mt);margin-bottom:12px}
+.opts{display:flex;flex-direction:column;gap:8px;margin-bottom:18px}
+.opt{border:1.5px solid var(--brd);border-radius:8px;padding:12px 15px;cursor:pointer;font-size:.88rem;line-height:1.5;transition:all .15s;background:var(--surf);text-align:left;width:100%}
+.opt:hover:not(.locked){border-color:var(--txt);background:var(--bg)}
+.opt.selected{border-color:#2563eb;background:#eff6ff}
+.opt.correct-reveal{border-color:#16a34a!important;background:#f0fdf4!important}
+.opt.wrong-reveal{border-color:#c0392b!important;background:#fdf2f2!important}
+.opt.locked{cursor:default}
+.feedback{background:var(--bg);border-left:3px solid var(--brd);border-radius:0 6px 6px 0;padding:12px 15px;font-size:.84rem;color:var(--mt);line-height:1.65;margin-bottom:14px;display:none}
+.feedback.on{display:block}
+.feedback strong{color:var(--txt);display:block;margin-bottom:4px}
+.btn-row{display:flex;gap:9px;flex-wrap:wrap}
+.score-big{font-size:clamp(2.5rem,8vw,4rem);font-weight:700;line-height:1}
+.score-sub{font-size:.9rem;color:var(--mt);margin-bottom:20px}
+.topic-bars{display:flex;flex-direction:column;gap:8px;margin-bottom:20px}
+.tb-row{display:flex;align-items:center;gap:10px}
+.tb-lbl{font-family:"JetBrains Mono",monospace;font-size:.56rem;color:var(--mt);width:110px;flex-shrink:0}
+.tb-bar-wrap{flex:1;height:8px;background:var(--brd);border-radius:4px;overflow:hidden}
+.tb-bar{height:100%;border-radius:4px;transition:width .6s}
+.tb-score{font-family:"JetBrains Mono",monospace;font-size:.6rem;color:var(--mt);width:44px;text-align:right}
+.wrong-list{max-height:240px;overflow-y:auto;display:flex;flex-direction:column;gap:6px;margin-bottom:16px}
+.wq-item{background:var(--bg);border-radius:6px;padding:10px 12px;font-size:.8rem;border-left:3px solid #c0392b}
+.wq-item strong{display:block;margin-bottom:3px;color:var(--txt)}
+.wq-item span{color:var(--mt)}
+@media(max-width:500px){.mode-row{grid-template-columns:1fr}.tb-lbl{width:72px}}
+/* Gamification */
+.streak-badge{font-family:"JetBrains Mono",monospace;font-size:.62rem;font-weight:700;padding:4px 10px;border-radius:20px;background:#fff3e0;color:#d97706;border:1.5px solid #fed7aa;transition:all .3s;display:none}
+.streak-badge.on{display:inline-flex;align-items:center;gap:4px}
+.streak-badge.mega{background:#fef3c7;color:#b45309;border-color:#fbbf24;transform:scale(1.08)}
+.xp-pop{position:fixed;pointer-events:none;font-family:"JetBrains Mono",monospace;font-weight:700;font-size:.9rem;color:#16a34a;animation:xpfloat .9s ease-out forwards;z-index:999}
+.xp-pop.neg{color:#c0392b}
+@keyframes xpfloat{0%{opacity:1;transform:translateY(0) scale(1)}100%{opacity:0;transform:translateY(-44px) scale(.85)}}
+.opt.shake{animation:shake .38s ease-out}
+@keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-6px)}40%{transform:translateX(6px)}60%{transform:translateX(-4px)}80%{transform:translateX(3px)}}
+.opt.bounce{animation:bounce .35s ease-out}
+@keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
+/* Feedback redesign */
+.fb-wrap{border-radius:8px;padding:14px 16px;margin-bottom:14px;display:none;font-size:.84rem;line-height:1.62}
+.fb-wrap.on{display:block}
+.fb-verdict{font-weight:700;font-size:.95rem;margin-bottom:8px;display:flex;align-items:center;gap:7px}
+.fb-row{margin-bottom:6px;padding:7px 10px;border-radius:5px;font-size:.82rem}
+.fb-row .lbl{font-family:"JetBrains Mono",monospace;font-size:.5rem;letter-spacing:.1em;text-transform:uppercase;margin-bottom:2px;opacity:.7}
+.fb-exp{margin-top:9px;padding-top:9px;border-top:1px solid rgba(0,0,0,.07);color:inherit;opacity:.85}
+/* XP bar on results */
+.xp-total{font-family:"JetBrains Mono",monospace;font-size:1.1rem;font-weight:700;color:#d97706;margin-bottom:4px}
+.streak-stat{font-size:.82rem;color:var(--mt);margin-bottom:18px}
+/* Score animation */
+.score-big{animation:scorein .5s ease-out}
+@keyframes scorein{from{transform:scale(.7);opacity:0}to{transform:scale(1);opacity:1}}
+
+</style>
+</head>
+<body>
+<div class="scr on" id="scrHome" style="justify-content:center;padding-top:40px">
+<div class="card">
+  <h1>WuDE<br><em>Prüfungstrainer</em></h1>
+  <p class="sub">Wirtschafts- und digitale Ethik · 120 Fragen · 60 s pro Frage</p>
+  <div style="font-family:'JetBrains Mono',monospace;font-size:.58rem;letter-spacing:.12em;text-transform:uppercase;color:var(--mt);margin-bottom:8px">Modus wählen</div>
+  <div class="mode-row">
+    <button class="mode-btn sel" id="btnLearn" onclick="setMode('learn')"><strong>Lernmodus</strong><small>Sofortiges Feedback nach jeder Frage</small></button>
+    <button class="mode-btn" id="btnExam" onclick="setMode('exam')"><strong>Prüfungsmodus</strong><small>Auswertung erst am Ende</small></button>
+    <button class="mode-btn" id="btnSim" onclick="setMode('sim')" style="grid-column:1/-1"><strong>⏱ Klausur-Simulator</strong><small>100 Fragen · 120 Minuten · gemischter Schwierigkeitsgrad</small></button>
+  </div>
+  <div style="font-family:'JetBrains Mono',monospace;font-size:.58rem;letter-spacing:.12em;text-transform:uppercase;color:var(--mt);margin-bottom:8px">Themenfilter (leer = alle)</div>
+  <div class="topic-grid" id="topicGrid"></div>
+  <div style="display:flex;gap:16px;align-items:center;margin-bottom:16px;flex-wrap:wrap">
+    <label style="font-size:.84rem;display:flex;align-items:center;gap:6px;cursor:pointer"><input type="checkbox" id="chkRandom" checked> Zufällige Reihenfolge</label>
+    <label style="font-size:.84rem;display:flex;align-items:center;gap:6px;cursor:pointer"><input type="checkbox" id="chkWrong"> Nur falsche Fragen</label>
+  </div>
+  <div id="homeHS" style="font-family:'JetBrains Mono',monospace;font-size:.62rem;color:var(--mt);margin-bottom:16px"></div>
+  <button class="btn btn-p" onclick="startQuiz()">Jetzt starten →</button>
+</div></div>
+<div class="scr" id="scrQuiz">
+  <div class="topbar">
+    <div class="progress-wrap"><div class="progress-fill" id="progFill"></div></div>
+    <div class="prog-lbl" id="progLbl"></div>
+    <div class="prog-lbl" id="scoreLbl"></div>
+    <div class="streak-badge" id="streakBadge"></div>
+    <div id="simTimerDisp" style="display:none;font-family:'JetBrains Mono',monospace;font-size:.72rem;font-weight:600;color:var(--txt);min-width:56px;text-align:center"></div>
+    <button class="btn btn-s" onclick="endQuiz()" style="padding:6px 12px;font-size:.54rem">Beenden</button>
+  </div>
+  <div class="card" style="padding:20px 22px">
+    <div class="timer-wrap"><div class="timer-fill" id="timerFill" style="width:100%;background:#16a34a"></div></div>
+    <div id="catBadge" class="cat-badge"></div>
+    <div class="q-type" id="qType"></div>
+    <div class="q-text" id="qText"></div>
+    <div class="opts" id="optsWrap"></div>
+    <div class="feedback" id="feedback"></div>
+    <div class="btn-row">
+      <button class="btn btn-p" id="btnCheck" onclick="checkAnswer()">Antwort prüfen</button>
+      <button class="btn btn-s" id="btnNext" onclick="nextQ()" style="display:none">Weiter →</button>
+    </div>
+  </div>
+</div>
+<div class="scr" id="scrResults" style="justify-content:center;padding-top:32px">
+<div class="card">
+  <div style="font-family:'JetBrains Mono',monospace;font-size:.58rem;letter-spacing:.12em;text-transform:uppercase;color:var(--mt);margin-bottom:8px">Ergebnis</div>
+  <div class="score-big" id="resBig"></div>
+  <div class="score-sub" id="resSub"></div>
+  <div id="resXP"></div>
+  <div style="font-family:'JetBrains Mono',monospace;font-size:.58rem;letter-spacing:.12em;text-transform:uppercase;color:var(--mt);margin-bottom:10px">Ergebnis nach Thema</div>
+  <div class="topic-bars" id="topicBars"></div>
+  <div id="wrongSection" style="display:none">
+    <div style="font-family:'JetBrains Mono',monospace;font-size:.58rem;letter-spacing:.12em;text-transform:uppercase;color:var(--mt);margin-bottom:8px">Falsch beantwortet</div>
+    <div class="wrong-list" id="wrongList"></div>
+  </div>
+  <div class="btn-row">
+    <button class="btn btn-p" onclick="location.reload()">Neu starten</button>
+    <button class="btn btn-s" id="btnRetryWrong" onclick="retryWrong()" style="display:none">Falsche wiederholen</button>
+  </div>
+</div></div>
+<script>
+const CATS={
+  grundlagen:{l:'Grundlagen Ethik',c:'#64748b'},
+  vertrauen:{l:'Vertrauen & Infrastruktur',c:'#2563eb'},
+  moral:{l:'Spontane Moral & Allmende',c:'#16a34a'},
+  cdr:{l:'CDR & ESG',c:'#7c3aed'},
+  ai:{l:'KI-Governance',c:'#c0392b'},
+  auth:{l:'Authentizität & Plattformen',c:'#d97706'}
+};
+const Q=[
+{id:1,c:'grundlagen',t:'true_false',q:'Ethik und Moral sind begrifflich identisch.',o:['Stimmt','Stimmt nicht'],a:1,e:'Moral bezeichnet die gelebten Werte einer Gruppe; Ethik ist die systematische Wissenschaft, die diese Werte reflektiert und hinterfragt. Beide Begriffe sind eng verwandt, aber nicht identisch.'},
+{id:2,c:'grundlagen',t:'multiple_choice',q:'Was beschreibt Ethik am besten?',o:['Gelebte Gewohnheiten einer Gruppe','Systematische Reflexion darüber, was richtig oder falsch ist','Rechtlich verbindliche Vorschriften','Individuelle Vorlieben'],a:1,e:'Ethik fragt, was richtig oder falsch ist — und warum. Sie ist keine Sammlung von Gewohnheiten, kein Gesetz und keine persönliche Vorliebe, sondern eine reflexive Disziplin.'},
+{id:3,c:'grundlagen',t:'true_false',q:'Konventionen können sozial nützlich sein, ohne deshalb automatisch ethisch richtig zu sein.',o:['Stimmt','Stimmt nicht'],a:0,e:'Konventionen können sozial nützlich sein (z.B. Begrüßungsrituale), ohne dass ihre Befolgung moralisch geboten wäre. Nützlichkeit und ethische Richtigkeit sind zu unterscheiden.'},
+{id:4,c:'grundlagen',t:'multiple_choice',q:'Welche Aussage trifft auf Moral am ehesten zu?',o:['Moral ist immer wissenschaftlich begründet','Moral meint gelebte Werte und Normen','Moral ist identisch mit Recht','Moral ist nur Privatsache'],a:1,e:'Legalität und Moralität fallen auseinander: Was gesetzlich erlaubt ist, kann moralisch problematisch sein — und umgekehrt. Ethik fragt über das Recht hinaus.'},
+{id:5,c:'grundlagen',t:'true_false',q:'Was legal ist, ist automatisch auch ethisch unproblematisch.',o:['Stimmt','Stimmt nicht'],a:1,e:'Legalität ist eine notwendige, aber keine hinreichende Bedingung für ethisches Handeln. Gesetze können moralisch unvollständig oder sogar ungerecht sein.'},
+{id:6,c:'grundlagen',t:'multiple_choice',q:'Welche Frage ist typisch ethisch?',o:['Was ist üblich?','Was ist profitabel?','Was ist begründbar richtig?','Was ist technisch möglich?'],a:2,e:'Normative Ethik entwickelt Maßstäbe für richtiges Handeln (Deontologie, Konsequenzialismus, Tugendethik). Deskriptive Ethik beschreibt faktische Überzeugungen — ohne zu urteilen.'},
+{id:7,c:'grundlagen',t:'true_false',q:'Ethik beginnt oft dort, wo etablierte Regeln oder Gewohnheiten begründet hinterfragt werden müssen.',o:['Stimmt','Stimmt nicht'],a:0,e:'Ethik beginnt mit der Frage nach Gründen und Rechtfertigungen. Etablierte Regeln können falsch oder veraltet sein — ihre kritische Prüfung ist der Kern ethischer Reflexion.'},
+{id:8,c:'grundlagen',t:'multiple_choice',q:'Welcher Begriff passt am besten zu „soziale Regeln, die Verhalten koordinieren“?',o:['Konventionen','Naturgesetze','Algorithmen','Sanktionen'],a:0,e:'Konventionen entstehen bottom-up durch gelebte Praxis und werden durch sozialen Druck aufrechterhalten — nicht durch staatliche Kodifizierung.'},
+{id:9,c:'grundlagen',t:'true_false',q:'Eine Verletzung einer Organisationsregel ist immer auch ein moralischer Verstoß.',o:['Stimmt','Stimmt nicht'],a:1,e:'Organisationsregeln sind keine moralischen Normen. Ein Regelverstoß kann disziplinarisch relevant sein, ohne moralisch falsch zu sein — und umgekehrt.'},
+{id:10,c:'grundlagen',t:'multiple_choice',q:'Welche Kombination ist korrekt?',o:['Ethik = Gewohnheit, Moral = Analyse','Ethik = Analyse, Moral = gelebte Normativität','Ethik = Gesetz, Moral = Vertrag','Ethik = Strategie, Moral = Gewinn'],a:1,e:'Normative Konflikte entstehen, wenn legitime Werte oder Ansprüche nicht gleichzeitig erfüllbar sind. Sie sind keine bloßen Kommunikationsprobleme.'},
+{id:11,c:'grundlagen',t:'true_false',q:'Konventionen lösen häufig Koordinationsprobleme.',o:['Stimmt','Stimmt nicht'],a:0,e:'Moralische Intuitionen sind wichtige Ausgangspunkte, aber keine verlässliche letzte Instanz. Sie können durch kognitive Verzerrungen und kulturelle Prägung beeinflusst sein.'},
+{id:12,c:'grundlagen',t:'multiple_choice',q:'Welche Aussage trifft am besten zu?',o:['Ethik prüft Moral','Moral prüft Ethik','Konvention ersetzt Ethik','Recht ersetzt Moral vollständig'],a:0,e:'Praktische Ethik überträgt ethische Theorien auf Anwendungsbereiche wie Medizin, Wirtschaft oder digitale Technologien — sie ist angewandt, nicht nur theoretisch.'},
+{id:13,c:'grundlagen',t:'true_false',q:'Soziale Normen und ethische Rechtfertigungen sind dasselbe.',o:['Stimmt','Stimmt nicht'],a:1,e:'Moralischer Relativismus besagt, dass Normen relativ zu einem kulturellen Kontext sind — nicht, dass alle Positionen gleich gut begründet wären. Er ist deskriptiv, nicht normativ.'},
+{id:14,c:'grundlagen',t:'multiple_choice',q:'Welche Art von Regel beantwortet vor allem die Frage „Ist das hier üblich oder passend?“',o:['moralische Regel','rechtliche Regel','konventionelle Regel','wissenschaftliche Regel'],a:2,e:'Ein moralisches Dilemma entsteht, wenn legitime Verpflichtungen kollidieren und keine Handlungsoption alle Ansprüche erfüllt. Es gibt keine konfliktfreie Lösung.'},
+{id:15,c:'grundlagen',t:'true_false',q:'Ethik im digitalen Kontext betrifft neben individuellem Handeln auch Strukturen, Anreize und technische Architekturen.',o:['Stimmt','Stimmt nicht'],a:0,e:'Wertpluralismus (Berlin) besagt, dass mehrere fundamentale Werte existieren, die nicht auf einen gemeinsamen Nenner reduziert werden können. Konflikte zwischen ihnen sind real.'},
+{id:16,c:'grundlagen',t:'multiple_choice',q:'Welche Aussage entspricht der im Modul vertretenen Grundposition am genauesten?',o:['Ethik ist primär Individualpsychologie','Ethik betrifft auch Markt-, Macht- und Infrastrukturgestaltung','Ethik ist weitgehend identisch mit Compliance','Ethik ist für digitale Märkte nachrangig'],a:1,e:'Ethik ist eine philosophische Disziplin mit eigenen Methoden und Theorien — keine Unterabteilung der Psychologie, auch wenn psychologische Befunde relevant sein können.'},
+{id:17,c:'grundlagen',t:'true_false',q:'Eine Praxis kann sozial akzeptiert sein und trotzdem ethisch problematisch bleiben.',o:['Stimmt','Stimmt nicht'],a:0,e:'Gesellschaftliche Akzeptanz und moralische Richtigkeit sind zu trennen. Historisch wurden viele akzeptierte Praktiken später als moralisch falsch erkannt.'},
+{id:18,c:'grundlagen',t:'multiple_choice',q:'Welche Frage gehört am ehesten zur Konvention?',o:['Ist das gerecht?','Ist das geboten?','Wird das hier üblicherweise so gemacht?','Ist das universalisierbar?'],a:2,e:'Ethische Grundsätze können in digitalen Kontexten auf neue Weise relevant werden — digitale Ethik ist eine Ausprägung angewandter Ethik, keine eigenständige Moralphilosophie.'},
+{id:19,c:'grundlagen',t:'true_false',q:'Digitale Ethik lässt sich vollständig von ökonomischen und organisatorischen Fragen trennen.',o:['Stimmt','Stimmt nicht'],a:1,e:'Wenn alle Beteiligten ihre eigenen Interessen maximieren, kann das Ergebnis kollektiv schlechter sein als bei Kooperation — das Grundproblem kollektiver Handlung.'},
+{id:20,c:'grundlagen',t:'multiple_choice',q:'Welche Aussage entspricht der Grundlogik der ersten Sitzungen am genauesten?',o:['Ethik ist vor allem Privatsache','Ethik betrifft auch die Gestaltung von Märkten, Machtbeziehungen und Infrastrukturen','Ethik ist nur eine Unterform von Recht','Ethik spielt für digitale Systeme nur eine Nebenrolle'],a:1,e:'Systemische Perspektiven fragen nach Strukturen, Anreizen und Architekturen statt nach individuellen Charaktereigenschaften. Viele digitale Probleme sind systemisch erzeugt.'},
+{id:21,c:'vertrauen',t:'true_false',q:'Vertrauen wird besonders dort relevant, wo vollständige Kontrolle nicht möglich oder zu teuer ist.',o:['Stimmt','Stimmt nicht'],a:0,e:'Vertrauen (Luhmann) reduziert Komplexität, indem es Handeln unter Unsicherheit ermöglicht. Es ist eine gesellschaftliche Infrastruktur, nicht nur ein individuelles Gefühl.'},
+{id:22,c:'vertrauen',t:'multiple_choice',q:'Was beschreibt Vertrauen im Kurs am besten?',o:['Nur ein weiches Gefühl','Eine strukturelle Bedingung funktionierender digitaler Märkte','Ein Synonym für Freundlichkeit','Ein rein psychologischer Bias'],a:1,e:'Institutionelles Vertrauen bezieht sich auf Rollen, Systeme und Organisationen — man vertraut dem Arzt als Rolle, nicht unbedingt als Person. Es skaliert besser als persönliches Vertrauen.'},
+{id:23,c:'vertrauen',t:'true_false',q:'Ohne Vertrauensarchitekturen können digitale Märkte instabil oder ineffizient werden.',o:['Stimmt','Stimmt nicht'],a:0,e:'Vertrauen und Kontrolle schließen sich nicht aus. Kontrollmechanismen können Vertrauen stabilisieren, indem sie verlässliche Rahmenbedingungen setzen.'},
+{id:24,c:'vertrauen',t:'multiple_choice',q:'Welches Element gehört typischerweise zu einer Vertrauensarchitektur?',o:['Zufall','Ratings und Verifikation','Schweigen','Beliebigkeit'],a:1,e:'Reputationssysteme aggregieren vergangenes Verhalten und machen es für Dritte zugänglich. Sie ersetzen interpersonales durch systemisches Vertrauen in anonymen Märkten.'},
+{id:25,c:'vertrauen',t:'true_false',q:'Interpersonales Vertrauen und institutionelles Vertrauen sind identisch.',o:['Stimmt','Stimmt nicht'],a:1,e:'Vertrauen reduziert Unsicherheit, eliminiert sie aber nicht. Wer vertraut, geht ein kalkuliertes Risiko ein — das ist seine Funktion, nicht ein Versagen.'},
+{id:26,c:'vertrauen',t:'multiple_choice',q:'Worauf vertraut man in einem Plattformmarkt häufig zuerst?',o:['Dem Wetter','Der reinen Moral aller Beteiligten','Regeln, Käuferschutz und Plattformmechanismen','Zufälligen Gerüchten'],a:2,e:'Digitale Vertrauensarchitekturen sind intentional gestaltete Systeme aus Signalen und Mechanismen — Bewertungen, Garantien, Badges —, die Vertrauen in anonymen Märkten ermöglichen.'},
+{id:27,c:'vertrauen',t:'true_false',q:'Digitale Systeme können Vertrauen nicht nur erleichtern, sondern auch simulieren oder untergraben.',o:['Stimmt','Stimmt nicht'],a:0,e:'Interface-Design kann Vertrauenswahrnehmungen erzeugen, ohne substanzielle Vertrauenswürdigkeit zu belegen. Trust Signals und echte Qualität sind zu unterscheiden.'},
+{id:28,c:'vertrauen',t:'multiple_choice',q:'Welche Aussage trifft Luhmanns Verständnis von Vertrauen am ehesten?',o:['Vertrauen ersetzt Institutionen','Vertrauen reduziert soziale Komplexität, ohne Unsicherheit aufzuheben','Vertrauen ist nur eine emotionale Präferenz','Vertrauen macht Kontrolle überflüssig'],a:1,e:'Reputationssysteme sind manipulierbar: gefälschte Bewertungen, soziale Dynamiken und selektive Löschung können die Signalwirkung verzerren.'},
+{id:29,c:'vertrauen',t:'true_false',q:'Ein System kann sehr kontrolliert sein und sich trotzdem unfair oder unberechenbar anfühlen.',o:['Stimmt','Stimmt nicht'],a:0,e:'Verdientes Vertrauen entsteht durch konsistente Erfüllung legitimer Erwartungen — nicht durch Sichtbarkeit, Werbung oder Design allein.'},
+{id:30,c:'vertrauen',t:'multiple_choice',q:'Welche drei Dimensionen prägen nach Mayer, Davis und Schoorman Vertrauenswürdigkeit?',o:['Speed, Reach, Growth','Ability, Benevolence, Integrity','Price, Quality, Design','Risk, Profit, Scale'],a:1,e:'Formale Zustimmung zu AGBs schafft rechtliche Bindung, aber keine substanzielle Einwilligung. Länge und Komplexität der Texte verhindern echtes Verstehen.'},
+{id:31,c:'vertrauen',t:'true_false',q:'Vertrauen kann funktional notwendig sein und zugleich asymmetrisch, extraktiv oder strategisch ausnutzbar organisiert werden.',o:['Stimmt','Stimmt nicht'],a:0,e:'Vertrauen kann als Infrastruktur wirken, auch wenn Nutzer:innen die zugrundeliegenden Mechanismen nicht verstehen. Das ist gerade sein gesellschaftlicher Vorteil.'},
+{id:32,c:'vertrauen',t:'multiple_choice',q:'Welche unbequeme Frage gehört zu digitalen Vertrauenssystemen?',o:['Wem nützt dieses Vertrauen am meisten?','Welche Farbe hat das Interface?','Wie laut ist der Server?','Wie alt ist das Unternehmen?'],a:0,e:'Intermediäre wie Plattformen übernehmen Vertrauensgarantien zwischen anonymen Parteien. Sie senken Transaktionskosten, erzeugen aber auch strukturelle Abhängigkeiten.'},
+{id:33,c:'vertrauen',t:'true_false',q:'Vertrauen kann strategisch erzeugt werden, ohne vollständig verdient zu sein.',o:['Stimmt','Stimmt nicht'],a:0,e:'Vertrauenslücken entstehen, wenn vorhandene Mechanismen nicht ausreichen, um Transaktionen zu ermöglichen — etwa bei neuen Plattformen ohne Bewertungshistorie.'},
+{id:34,c:'vertrauen',t:'multiple_choice',q:'Welcher Satz ist am ehesten richtig?',o:['Ratings sind unfehlbar','Vertrauensinfrastruktur kann selbst manipuliert werden','Verifikation ersetzt jede Verantwortung','Plattformen haben keinen Einfluss auf Vertrauen'],a:1,e:'Escrow-Dienste halten Zahlungen zurück, bis beide Parteien ihre Leistungen erbracht haben. Vertrauen wird durch institutionelle Struktur ersetzt, nicht durch persönliche Beziehung.'},
+{id:35,c:'vertrauen',t:'true_false',q:'Fake Reviews sind ein Beispiel dafür, dass Vertrauensmechanismen selbst angreifbar sind.',o:['Stimmt','Stimmt nicht'],a:0,e:'Vertrauensdesign kann Handeln ermöglichen, obwohl Unsicherheit bestehen bleibt. Es ist funktional, weil die Alternative — radikales Misstrauen — prohibitiv teuer wäre.'},
+{id:36,c:'vertrauen',t:'multiple_choice',q:'Was ist eher ein Beispiel für institutionelles Vertrauen als für interpersonales Vertrauen?',o:['„Ich kenne diese Person seit Jahren“','„Ich vertraue dem Käuferschutz der Plattform“','„Sie wirkt sympathisch“','„Wir sind befreundet“'],a:1,e:'Hohe Nutzungszahlen können auch durch Lock-in-Effekte oder fehlende Alternativen entstehen, nicht nur durch Vertrauen in die Fairness des Systems.'},
+{id:37,c:'vertrauen',t:'true_false',q:'„Vertrauen als Infrastruktur“ bedeutet, dass Vertrauen Teil der Marktarchitektur ist.',o:['Stimmt','Stimmt nicht'],a:0,e:'Vertrauen kann einseitig extraktiv organisiert sein: Plattformen nutzen das Vertrauen, das Nutzer:innen in andere setzen, ohne äquivalenten Gegenwert zu geben.'},
+{id:38,c:'vertrauen',t:'multiple_choice',q:'Welche Aussage ist falsch?',o:['Vertrauen kann Marktteilnahme erleichtern','Vertrauen kann technisch mitproduziert werden','Vertrauen ist in digitalen Märkten irrelevant','Vertrauen kann über Signale organisiert werden'],a:2,e:'Signalwert und substanzieller Schutz von Badges sind zu unterscheiden. Ob Schutzversprechen eingelöst werden, hängt von AGBs und konkretem Fall ab.'},
+{id:39,c:'vertrauen',t:'true_false',q:'Ein System kann Vertrauen erzeugen und gleichzeitig Machtasymmetrien verstärken.',o:['Stimmt','Stimmt nicht'],a:0,e:'Vertrauensdesign kippt ins Kontrollregime, wenn Überwachung steigt, Widerspruchsmöglichkeiten sinken und Rechenschaft unklar bleibt.'},
+{id:40,c:'vertrauen',t:'multiple_choice',q:'Welche Frage prüft ein digitales Vertrauensverhältnis am präzisesten?',o:['Wirkt das freundlich?','Ist diese Vertrauensbeziehung wechselseitig oder einseitig extraktiv organisiert?','Ist das Interface hell genug?','Ist die Sprache modern genug?'],a:1,e:'Persönliches und institutionelles Vertrauen erfüllen unterschiedliche Funktionen. In hochriskanten oder komplexen Kontexten ergänzen sie sich — keines macht das andere überflüssig.'},
+{id:41,c:'moral',t:'true_false',q:'Große digitale Systeme können nicht verlässlich allein über spontane Moral, sondern müssen über Regeln, Anreize und Governance stabilisiert werden.',o:['Stimmt','Stimmt nicht'],a:0,e:'Hardin (1968): Individuell rationales Handeln — maximale Nutzung eines gemeinsamen Gutes — ist kollektiv irrational und erschöpft das Gut. Das Grundproblem digitaler Allmenden.'},
+{id:42,c:'moral',t:'multiple_choice',q:'Warum reicht spontane Moral oft nicht aus?',o:['Weil Menschen keine Moral haben','Weil Moral oft gruppenbezogen und schlecht skalierbar ist','Weil Recht immer genügt','Weil Plattformen neutral sind'],a:1,e:'Informationsgüter sind nicht-rival, aber Aufmerksamkeit, Plattformvertrauen und Kommentarkulturen sind erschöpfbar. Nicht alle digitalen Güter sind Allmende-resistent.'},
+{id:43,c:'moral',t:'true_false',q:'Kooperation ist oft kostspielig und daher nicht automatisch stabil.',o:['Stimmt','Stimmt nicht'],a:0,e:'Gruppen können Allmende-Güter durch eigene Regeln, Monitoring und Sanktionen nachhaltig verwalten (Ostrom). Das widerlegt den Dualismus Staat vs. Markt.'},
+{id:44,c:'moral',t:'multiple_choice',q:'Welche Aussage trifft die Logik der Tragik der Allmende im digitalen Kontext am genauesten?',o:['Individuell rationale Nutzung gemeinsamer Ressourcen kann kollektiv destruktiv sein','Gemeinsame Ressourcen werden immer fair verteilt','Digitale Güter können keine Allmenden sein','Allmenden scheitern nur bei fehlender Technologie'],a:0,e:'Gruppenmoral bezeichnet die internen Standards einer Gemeinschaft, die durch Konformitätsdruck und soziale Sanktion wirken — sie kann von gesellschaftlichen Normen abweichen.'},
+{id:45,c:'moral',t:'true_false',q:'Aufmerksamkeit und Glaubwürdigkeit können als digitale Allmenden verstanden werden.',o:['Stimmt','Stimmt nicht'],a:0,e:'Öffentliche Güter sind nicht-rival und nicht-exkludierbar. Diese Eigenschaften erzeugen Free-Rider-Anreize: Individuen profitieren, ohne beizutragen.'},
+{id:46,c:'moral',t:'multiple_choice',q:'Welches Beispiel passt am besten zu einer digitalen Allmende?',o:['Ein einzelner privater Kalender','Öffentliche Diskursqualität auf Plattformen','Ein Offline-Taschenrechner','Ein Stift im Federmäppchen'],a:1,e:'Spontane Moral funktioniert in überschaubaren Gruppen mit persönlicher Nähe und Sanktionsmöglichkeit. In großen anonymen Systemen fehlen diese Voraussetzungen.'},
+{id:47,c:'moral',t:'true_false',q:'Viele problematische digitale Praktiken sind nicht nur moralische Ausrutscher, sondern systemische Koordinationsprobleme.',o:['Stimmt','Stimmt nicht'],a:0,e:'Free-Riding bezeichnet das Profitieren von kollektiven Gütern ohne eigenen Beitrag. Bei zu vielen Free-Ridern kann das kollektive Gut nicht aufrechterhalten werden.'},
+{id:48,c:'moral',t:'multiple_choice',q:'Was ist eine typische Folge gruppenbezogener Moral?',o:['universelle Gerechtigkeit','völlige Objektivität','stärkere Loyalität nach innen als nach außen','Abschaffung aller Konflikte'],a:2,e:'Kollektive Handlungsprobleme: Jeder handelt für sich rational, das kollektive Ergebnis ist aber schlechter als bei Kooperation. Klassisch: Prisoner\'s Dilemma.'},
+{id:49,c:'moral',t:'true_false',q:'Deskriptive Normalität und normative Vertretbarkeit können in digitalen Umgebungen deutlich auseinanderfallen.',o:['Stimmt','Stimmt nicht'],a:0,e:'Im Prisoner\'s Dilemma ist Defektieren für jeden die dominante Strategie, obwohl beiderseitige Kooperation das bessere Gesamtergebnis ergäbe.'},
+{id:50,c:'moral',t:'multiple_choice',q:'Was wird durch den Begriff „digitale Allmende“ betont?',o:['Nur Serverkosten','Gemeinsame Ressourcen können auch digital ausgebeutet werden','Nur analoge Güter sind knapp','Nur Staaten verursachen Knappheit'],a:1,e:'Kooperation kann aus eigennütziger Kalkulation entstehen — wenn der gemeinsame Nutzen die Defektion überwiegt. Altruismus setzt genuine Uneigennützigkeit voraus.'},
+{id:51,c:'moral',t:'true_false',q:'Moralische Intuitionen sind häufig sozial geprägt und nicht rein rational.',o:['Stimmt','Stimmt nicht'],a:0,e:'Normen können Handlungsprobleme lindern, aber nur wenn: Durchsetzbarkeit gegeben ist, die Gruppe überschaubar ist und Konformitätskosten akzeptabel sind.'},
+{id:52,c:'moral',t:'multiple_choice',q:'Welche Aussage passt am besten zu Haidts sozial-intuitionistischem Ansatz?',o:['Moralische Urteile sind immer rein logisch','Moralische Urteile entstehen häufig intuitiv, Begründungen folgen oft später','Moral und Mathematik sind identisch','Intuition spielt keine Rolle'],a:1,e:'Online-Kommentarkulturen degradieren durch toxisches Verhalten — klassische Allmenden-Dynamiken. Viele Plattformen haben Kommentarbereiche deshalb eingeschränkt.'},
+{id:53,c:'moral',t:'true_false',q:'Soziale Normen wirken auch über Erwartungen darüber, was andere tun und von einem erwarten.',o:['Stimmt','Stimmt nicht'],a:0,e:'Soziale Sanktionierung ist der wichtigste Mechanismus zur Durchsetzung sozialer Normen: Missbilligung, Statusverlust, Gruppenausschluss — informell, aber wirksam.'},
+{id:54,c:'moral',t:'multiple_choice',q:'Welche Ressource kann in digitalen Märkten kollektiv beschädigt werden?',o:['Vertrauen','Nur Strom','Nur Grundstücke','Nur Wasser'],a:0,e:'Algorithmische Systeme handeln in einem Maßstab und einer Geschwindigkeit, die menschliche moralische Intuitionen überfordert. Strukturelle Governance wird notwendig.'},
+{id:55,c:'moral',t:'true_false',q:'Das Problem digitaler Märkte besteht nur darin, dass einzelne Personen unmoralisch handeln.',o:['Stimmt','Stimmt nicht'],a:1,e:'Große anonyme Gruppen leiden unter Free-Rider-Problemen und schwächerer sozialer Kontrolle. Kooperation ist in kleinen Gruppen mit persönlicher Nähe einfacher.'},
+{id:56,c:'moral',t:'multiple_choice',q:'Welche Aussage entspricht der in Session 2 entwickelten Schlussfolgerung?',o:['Moral ist überflüssig','Große digitale Systeme brauchen Regeln, Anreize und institutionelles Design','Kooperation stabilisiert sich automatisch','Plattformen sollten normativ neutral bleiben'],a:1,e:'Governance-Lösungen für Allmende-Probleme brauchen: klare Regeln, Monitoring, Sanktionsmechanismen und Mechanismen kollektiver Entscheidung.'},
+{id:57,c:'moral',t:'true_false',q:'„Normal“ und „richtig“ fallen in digitalen Umgebungen oft nicht zusammen.',o:['Stimmt','Stimmt nicht'],a:0,e:'Moralische Erschöpfung: Wiederholter Kontakt mit Grenzverletzungen stumpft moralische Reaktionsfähigkeit ab — relevant für Plattformkultur und Content-Moderation.'},
+{id:58,c:'moral',t:'multiple_choice',q:'Welcher Fall passt besonders gut zur Logik digitaler Allmenden?',o:['Ein einzelnes geschlossenes Notizbuch','Gekaufte Reichweite, die Sichtbarkeit und Glaubwürdigkeit anderer verzerrt','Ein ausgedruckter Stundenplan','Ein privates Telefonbuch'],a:1,e:'Aufmerksamkeit ist begrenzt: Wettbewerb um sie ist eine Form digitaler Allmenden-Degradation. Je mehr Content, desto geringer der Aufmerksamkeitswert einzelner Beiträge.'},
+{id:59,c:'moral',t:'true_false',q:'Je größer und anonymer ein System ist, desto weniger kann es sich allein auf persönliche Tugend verlassen.',o:['Stimmt','Stimmt nicht'],a:0,e:'Digitale Allmenden sind Ressourcen — Kommentarkulturen, Open Source, Enzyklopädien —, die durch Missbrauch, Übernutzung oder Free-Riding degradieren können.'},
+{id:60,c:'moral',t:'multiple_choice',q:'Welche Aussage ist am ehesten richtig?',o:['Moralische Intuition genügt für Plattformgovernance','Systemlogik und Anreizdesign sind für digitale Ethik zentral','Kooperation löst sich immer von selbst','Digitale Märkte brauchen keine institutionellen Regeln'],a:1,e:'Architekturinterventionen (Friktion, Kontextsignale, Sichtbarkeitsregeln) sind wirkungsvoller als moralische Appelle, weil sie die Bedingungen von Entscheidungen verändern.'},
+{id:61,c:'cdr',t:'true_false',q:'CDR steht für Corporate Digital Responsibility.',o:['Stimmt','Stimmt nicht'],a:0,e:'CDR geht über Datenschutz hinaus: KI-Einsatz, algorithmische Fairness, Plattformverantwortung, Transparenz und Governance der gesamten digitalen Wertschöpfung.'},
+{id:62,c:'cdr',t:'multiple_choice',q:'Was fragt CDR im Kern?',o:['Wie nutzt ein Unternehmen digitale Technologien verantwortlich?','Wie spart ein Unternehmen nur Papier?','Wie maximiert ein Unternehmen nur Klicks?','Wie ersetzt ein Unternehmen alle Menschen?'],a:0,e:'ESG: Environmental (Umwelt), Social (Soziales), Governance (Unternehmensführung). Die drei Dimensionen zur Bewertung von Nachhaltigkeit und unternehmerischer Verantwortung.'},
+{id:63,c:'cdr',t:'true_false',q:'Datenschutz ist ein Teil von CDR, aber CDR umfasst darüber hinaus u. a. KI, Automatisierung, Plattformlogiken, Fairness und Governance.',o:['Stimmt','Stimmt nicht'],a:0,e:'CSRD verpflichtet größere EU-Unternehmen zur strukturierten Nachhaltigkeitsberichterstattung. ESRS sind die technischen Standards darunter: CSRD = Pflicht, ESRS = Struktur.'},
+{id:64,c:'cdr',t:'multiple_choice',q:'Wofür steht ESG?',o:['Economy, Strategy, Growth','Ethics, Systems, Governance','Environmental, Social, Governance','Efficiency, Scale, Globalization'],a:2,e:'Doppelte Wesentlichkeit: Financial Materiality (Wie wirken Themen auf das Unternehmen?) + Impact Materiality (Wie wirkt das Unternehmen auf andere?). Beide Perspektiven sind relevant.'},
+{id:65,c:'cdr',t:'true_false',q:'Digitale Verantwortung kann E-, S- und G-Dimensionen zugleich betreffen.',o:['Stimmt','Stimmt nicht'],a:0,e:'Impact Materiality ist die Außenperspektive: Welchen Schaden oder Nutzen erzeugt das Unternehmen für andere — unabhängig davon, ob dieser auf das Unternehmen zurückfällt?'},
+{id:66,c:'cdr',t:'multiple_choice',q:'Was regelt die CSRD im Kern?',o:['Wie Logos gestaltet werden','Dass bestimmte Unternehmen zu Nachhaltigkeit und Verantwortung berichten müssen','Wie man Likes generiert','Wie Plattformen Inhalte filtern'],a:1,e:'Datenpraktiken berühren primär die S-Dimension: Fairness, Rechte und Privatsphäre. Sie können aber auch G-Themen (Governance) oder E-Themen (Energieverbrauch) berühren.'},
+{id:67,c:'cdr',t:'true_false',q:'ESRS geben vor, wie unter der CSRD berichtet wird.',o:['Stimmt','Stimmt nicht'],a:0,e:'Institutionalisierung: CDR-Themen sind in Rollen, Regeln, Prozessen, Kontrollen und Berichtsroutinen verankert — nicht nur kommuniziert. Sie hängt nicht vom Goodwill Einzelner ab.'},
+{id:68,c:'cdr',t:'multiple_choice',q:'Was bedeutet doppelte Wesentlichkeit am besten?',o:['Nur finanzielle Risiken zählen','Nur ökologische Themen zählen','Relevant ist sowohl, was für das Unternehmen riskant ist, als auch, was das Unternehmen für andere riskant macht','Nur freiwillige Offenlegung zählt'],a:2,e:'Reporting dokumentiert Governance — es ist kein Ersatz für sie. Gut formulierte Berichte ohne operative Verantwortungsstrukturen sind eine Form von Assurance-Theater.'},
+{id:69,c:'cdr',t:'true_false',q:'Ein Unternehmen kann digitale Verantwortung behaupten, ohne sie institutionell verankert zu haben.',o:['Stimmt','Stimmt nicht'],a:0,e:'Policy definiert, was sein soll. Institutionalisierung stellt durch Strukturen sicher, dass es tatsächlich passiert — auch ohne permanent engagierte Einzelpersonen.'},
+{id:70,c:'cdr',t:'multiple_choice',q:'Wann ist digitale Verantwortung am ehesten institutionalisiert?',o:['Wenn sie nur in Leitbildern erwähnt wird','Wenn sie in Rollen, Regeln, Prozessen und Kontrollen verankert ist','Wenn nur eine Person sich privat darum kümmert','Wenn nur Marketing darüber spricht'],a:1,e:'ESG ist ein Ordnungsrahmen für Investorenanalysen, kein moralischer Oberbegriff. Er hat stark finanziellen und regulatorischen Charakter.'},
+{id:71,c:'cdr',t:'true_false',q:'Gute digitale Verantwortung zeigt sich an Zuständigkeiten, Prüfungen, KPIs und Eskalationswegen.',o:['Stimmt','Stimmt nicht'],a:0,e:'KPIs im CDR-Kontext sind konkrete messbare Größen: Anteil transparenter Datenpraktiken, Fairness-Metriken, Anzahl Datenschutzvorfälle. Sie machen Ziele überprüfbar.'},
+{id:72,c:'cdr',t:'multiple_choice',q:'Welches Beispiel gehört am ehesten zur Governance-Dimension von ESG?',o:['Energieverbrauch eines Rechenzentrums','Bias in Auswahlprozessen','Auditierbarkeit und Verantwortlichkeiten','Körperunzufriedenheit auf Instagram'],a:2,e:'Greenwashing: Kommunikative Übertreibung oder Erfindung von Verantwortungsleistungen ohne substanzielle Grundlage. Im CDR-Kontext relevant bei KI-Ethik-Claims ohne Governance.'},
+{id:73,c:'cdr',t:'true_false',q:'CDR ist nur für Großkonzerne relevant.',o:['Stimmt','Stimmt nicht'],a:1,e:'Ein Audit prüft strukturiert und unabhängig, ob Prozesse und Systeme den definierten Anforderungen entsprechen — im CDR-Kontext: KI-Fairness, Datenpraktiken, Reporting.'},
+{id:74,c:'cdr',t:'multiple_choice',q:'Welche Frage ist typisch für die doppelte Wesentlichkeit?',o:['Ist unser Logo modern?','Wobei sind wir für andere riskant?','Wie viele Likes hatten wir?','Welche App ist am buntesten?'],a:1,e:'KPI-Anfälligkeit: Anzahl veröffentlichter Leitlinien misst Input-Aktivität, nicht Governance-Wirkung. Sie ist leicht produzierbar ohne operative Auswirkung.'},
+{id:75,c:'cdr',t:'true_false',q:'Eine gut messbare KPI ist nicht automatisch normativ sinnvoll oder governance-tauglich.',o:['Stimmt','Stimmt nicht'],a:0,e:'CDR-Themen entstehen im Produktdesign und in Algorithmen — wenn Verantwortung nur im Sustainability-Silo liegt, fehlt die operative Nähe für wirksame Einflussnahme.'},
+{id:76,c:'cdr',t:'multiple_choice',q:'Welche Aussage passt am besten?',o:['ESG ist nur PR','ESG ist ein Ordnungsrahmen für Verantwortungs- und Nachhaltigkeitsthemen','ESG ersetzt jede Ethik','ESG betrifft nur Umweltfragen'],a:1,e:'Operative Verankerung unterscheidet substanzielle von symbolischer CDR: Klare Zuständigkeiten, Kontrollen und Eskalationswege — nicht Bekenntnisse.'},
+{id:77,c:'cdr',t:'true_false',q:'Ein gutes Governance-Modell sollte auch seinen eigenen möglichen Scheiterpunkt reflektieren.',o:['Stimmt','Stimmt nicht'],a:0,e:'Finanzielle Risikorelevanz macht ein Thema nicht wesentlich. Impact Materiality fragt nach Wirkungen auf andere — unabhängig von Rückwirkungen auf das Unternehmen.'},
+{id:78,c:'cdr',t:'multiple_choice',q:'Was gehört eher nicht zu einem Mini-CDR-/ESG-Steuerungsmodell?',o:['Policy','Eskalationsweg','KPI','Zufällige Bauchentscheidung'],a:3,e:'Governance-Reife zeigt sich in der Fähigkeit, Risiken zu erkennen, zu dokumentieren und zu steuern — auch unter Druck, auch wenn engagierte Personen das Unternehmen verlassen.'},
+{id:79,c:'cdr',t:'true_false',q:'Wenn Verantwortung nur vom Goodwill einzelner Personen abhängt, ist sie noch nicht gut institutionalisiert.',o:['Stimmt','Stimmt nicht'],a:0,e:'CDR und ESG betreffen auch kleinere Unternehmen: Datenpraktiken, KI-Entscheidungen und Plattformlogiken sind in jedem digitalen Geschäftsmodell governance-relevant.'},
+{id:80,c:'cdr',t:'multiple_choice',q:'Welche Form digitaler Verantwortung ist am stärksten institutionalisiert?',o:['ein Leitbild ohne Zuständigkeiten','eine organisatorisch verankerte Praxis mit Rollen, Kontrollen und Eskalationswegen','ein CEO-Statement','eine Einzelinitiative im Team'],a:1,e:'Schnell und skaliert innovieren vs. rechenschaftsfähig und auditierbar bleiben: Diese Spannung ist strukturell für CDR, kein zufälliges Kommunikationsproblem.'},
+{id:81,c:'ai',t:'true_false',q:'Agentische Systeme handeln typischerweise kontinuierlich und nicht nur einmalig.',o:['Stimmt','Stimmt nicht'],a:0,e:'Agentische Systeme koordinieren mehrstufige Abläufe eigenständig und nutzen Tools. Das macht Aufsicht, Eingriff und Rechenschaft deutlich schwieriger als bei Klassifikatoren.'},
+{id:82,c:'ai',t:'multiple_choice',q:'Welches Beispiel passt am ehesten zu einem agentischen System?',o:['Ein statisches PDF','Ein autonomes Media-Buying-System','Eine gedruckte Visitenkarte','Ein ausgeschalteter Projektor'],a:1,e:'In den meisten Vorfällen tut das System genau das, wofür es optimiert wurde. Das Problem liegt in Zieldefinition, Proxy-Metriken oder Trainingsdaten — nicht im Code.'},
+{id:83,c:'ai',t:'true_false',q:'AI Governance beginnt erst dann, wenn ein Schaden öffentlich geworden ist.',o:['Stimmt','Stimmt nicht'],a:1,e:'Proxy-Versagen: Eine messbare Kennzahl repräsentiert das eigentliche Ziel nicht adäquat. Das System optimiert die Kennzahl, verfehlt aber das Ziel.'},
+{id:84,c:'ai',t:'multiple_choice',q:'Welche Verschiebung ist für KI-Governance zentral?',o:['Von Wetter zu Klima','Von Entscheidung zu Systemverhalten','Von Farbe zu Form','Von Papier zu Stift'],a:1,e:'Ziel-Fehlspezifikation (Amodei et al.): Das codierte Ziel weicht vom gewünschten ab. Das System funktioniert technisch einwandfrei, tut aber das Falsche.'},
+{id:85,c:'ai',t:'true_false',q:'Viele ethisch problematische Ergebnisse algorithmischer Systeme entstehen nicht durch technischen Defekt, sondern durch Zielsetzung, Proxy-Wahl oder fehlende Nebenbedingungen.',o:['Stimmt','Stimmt nicht'],a:0,e:'KI-Governance beginnt bei Zieldefinition und Design — lange vor dem Deployment. Grundlegende Entscheidungen über Daten und Optimierungslogik sind nachträglich schwer korrigierbar.'},
+{id:86,c:'ai',t:'multiple_choice',q:'Welche Aussage trifft eher zu?',o:['Systeme verhalten sich oft zufällig','Systeme tun häufig genau das, wofür sie optimiert wurden','Systeme ignorieren Ziele grundsätzlich','Systeme sind moralische Subjekte'],a:1,e:'Fehlende Abschaltlogik: Kein Mechanismus stoppt das System bei problematischen Bedingungen. Es läuft unbegrenzt weiter — auch wenn es Schaden erzeugt.'},
+{id:87,c:'ai',t:'true_false',q:'Proxy-Metriken können systematische Fehlsteuerung erzeugen.',o:['Stimmt','Stimmt nicht'],a:0,e:'Verdeckte Diskriminierung über Proxy-Merkmale: Postleitzahl korreliert mit Ethnizität, Browsing-Verhalten mit Alter — auch ohne explizite Nutzung geschützter Merkmale.'},
+{id:88,c:'ai',t:'multiple_choice',q:'Welcher Begriff beschreibt einen systematischen Scheiterpfad eines KI-Systems?',o:['Moodboard','Failure Mode','Brand Fit','Quick Win'],a:1,e:'Rückkopplungsschleifen: Systemoutputs beeinflussen künftige Entscheidungen — anfängliche Verzerrungen werden selbstverstärkend eskaliert.'},
+{id:89,c:'ai',t:'true_false',q:'Gute AI Governance braucht rote Linien und Eskalationslogiken.',o:['Stimmt','Stimmt nicht'],a:0,e:'Human-in-the-Loop ist nur dann echte Kontrolle, wenn Menschen Zeit, Information und tatsächliche Stop-Macht haben. Formale Einbindung ohne diese Voraussetzungen ist symbolisch.'},
+{id:90,c:'ai',t:'multiple_choice',q:'Welche Frage gehört eher zur Zielkontrolle?',o:['Was soll das System maximieren oder minimieren?','Welche Schriftart nutzen wir?','Wie viele Bilder sind auf der Folie?','Welche Farbe hat das Dashboard?'],a:0,e:'Übervertrauen: KI-Ausgaben wirken so präzise und autoritativ, dass menschliche Prüfung entfällt. Das System ersetzt menschliches Urteil statt es zu unterstützen.'},
+{id:91,c:'ai',t:'true_false',q:'Intransparenz und Skalierung machen KI-Governance besonders schwierig.',o:['Stimmt','Stimmt nicht'],a:0,e:'Algorithmic Accountability: Pflicht, für Auswirkungen algorithmischer Entscheidungen Rechenschaft abzulegen und Überprüfungs- sowie Korrekturmechanismen bereitzustellen.'},
+{id:92,c:'ai',t:'multiple_choice',q:'Welche Beschreibung trifft einen AI-Incident am ehesten?',o:['eine bloß theoretische Möglichkeit','ein beobachtbarer Vorfall mit Betroffenheit, Dokumentationsbedarf und Reaktionsnotwendigkeit','ein hypothetisches Zukunftsszenario ohne Anzeichen','eine allgemeine Sorge ohne Ereignisbezug'],a:1,e:'Incidents sind konkret: Sie sind eingetreten, haben Betroffene, erfordern Dokumentation und Reaktion. Das unterscheidet Incident-Management von abstrakter Risikoanalyse.'},
+{id:93,c:'ai',t:'true_false',q:'„Society-in-the-loop“ betont, dass gesellschaftliche Werte in die laufende Steuerung rückgekoppelt werden müssen.',o:['Stimmt','Stimmt nicht'],a:0,e:'Auditierbarkeit verlangt, dass relevantes Verhalten, Daten- und Entscheidungslogik für unabhängige Prüfer:innen nachvollziehbar gemacht werden — mehr als nur Dokumentation.'},
+{id:94,c:'ai',t:'multiple_choice',q:'Was gehört eher nicht in einen Control Stack?',o:['rote Linien','Auditmechanismus','Incident-Response-Schritt','bloße Hoffnung, dass nichts passiert'],a:3,e:'Anreiz-Gaming: Akteure lernen, welche Signale das System bevorzugt, und optimieren diese — nicht die zugrundeliegenden Qualitäten. Goodhart\'s Law.'},
+{id:95,c:'ai',t:'true_false',q:'Menschliche Aufsicht kann rein symbolisch sein und trotzdem „vorhanden“ wirken.',o:['Stimmt','Stimmt nicht'],a:0,e:'Governance muss mit Drift, Kontextwechsel und veränderten Umweltbedingungen rechnen. Systeme verändern sich nicht nur durch technische Updates, sondern durch Nutzungsverschiebungen.'},
+{id:96,c:'ai',t:'multiple_choice',q:'Welche vier Funktionen passen zum NIST AI RMF?',o:['Build, Launch, Scale, Sell','Govern, Map, Measure, Manage','Trust, Like, Share, Buy','Design, Code, Post, Grow'],a:1,e:'KPI-Orientierung kann Fehlanreize erzeugen: Wenn eine Kennzahl zum Ziel wird, hört sie auf, eine gute Kennzahl zu sein (Goodhart\'s Law).'},
+{id:97,c:'ai',t:'true_false',q:'Ein Vorfall sollte auch unter dem Gesichtspunkt gedacht werden, welche erste öffentliche Frage von außen auftaucht.',o:['Stimmt','Stimmt nicht'],a:0,e:'Assurance unterscheidet sich von Goodwill: Sie verlangt wiederholbare Evidenz, Kontrolle und Nachweisbarkeit — nicht nur gute Absichten.'},
+{id:98,c:'ai',t:'multiple_choice',q:'Welche Aussage ist am besten?',o:['Gute AI Governance ist vor allem ein Imageprojekt','Gute AI Governance ist eine wiederholbare Managementpraxis','Gute AI Governance heißt nur schnellere Systeme','Gute AI Governance ersetzt Verantwortung'],a:1,e:'Society-in-the-loop erweitert Governance über interne Teams hinaus: Breitere gesellschaftliche Stakeholder sollen Rückmeldung in KI-Systeme einspeisen können.'},
+{id:99,c:'ai',t:'true_false',q:'Wenn KPIs leicht „bespielt“ werden können, ist das ein Governance-Problem.',o:['Stimmt','Stimmt nicht'],a:0,e:'Performance misst, ob ein System seinen definierten Zweck erfüllt. Governance fragt, ob der Zweck richtig definiert, Nebenfolgen adressiert und das System steuerbar ist.'},
+{id:100,c:'ai',t:'multiple_choice',q:'Welche Frage ist für AI Governance zentral?',o:['Ist das System nützlich?','Ist das Verhalten des Systems unter Druck kontrollierbar und rechenschaftsfähig?','Ist das Interface schön?','Ist die App kostenlos?'],a:1,e:'Model Cards dokumentieren Verwendungszweck, Performance und Einschränkungen eines KI-Modells — ein Governance-Artefakt für Nachvollziehbarkeit und Auditierbarkeit.'},
+{id:101,c:'auth',t:'true_false',q:'Plattformen ordnen nicht nur Inhalte, sondern auch Menschen, Chancen und soziale Wahrnehmung.',o:['Stimmt','Stimmt nicht'],a:0,e:'Parasoziale Beziehungen (Horton & Wohl, 1956): Der Fan kennt den Influencer, nicht umgekehrt. Diese Bindungen können sehr real wirken, obwohl keine Reziprozität besteht.'},
+{id:102,c:'auth',t:'multiple_choice',q:'Welche Aussage passt am besten zur Plattformlogik von Authentizität?',o:['Rohheit wird immer am stärksten belohnt','Authentisch wirken heißt oft, sehr präzise zu kuratieren','Authentizität ist online bedeutungslos','Plattformen belohnen völlige Beliebigkeit'],a:1,e:'KI-Companions sprechen echte emotionale Bedürfnisse an. Ethische Fragen: Täuschung über die Natur der Beziehung? Soziale Isolation? Kommerzielle Ausnutzung von Vulnerabilität?'},
+{id:103,c:'auth',t:'true_false',q:'Dating-Apps können als Sortiermaschinen verstanden werden.',o:['Stimmt','Stimmt nicht'],a:0,e:'Virtuelle Influencer normalisieren bestimmte Körperideale, parasoziale Bindungsformen und Verfügbarkeitserwartungen — die strukturellen Effekte sind relevanter als ihre Echtheit.'},
+{id:104,c:'auth',t:'multiple_choice',q:'Welche Wirkung von Dating-Apps lässt sich am besten als infrastrukturelle Vorsortierung beschreiben?',o:['automatische Verbindlichkeit','technische Vorsortierung von Sichtbarkeit, Passung und Annäherung','Aufhebung aller Zurückweisung','Ende strategischer Selbstdarstellung'],a:1,e:'Performative Selbstpräsentation (Goffman): Soziale Identität wird für ein Publikum gestaltet. Auf digitalen Plattformen durch Algorithmen und Bewertungsmechanismen verstärkt.'},
+{id:105,c:'auth',t:'true_false',q:'Parasoziale Beziehungen sind immer gegenseitige Beziehungen.',o:['Stimmt','Stimmt nicht'],a:1,e:'Authenticity Washing: Authentizität wird strategisch performiert, um Vertrauen und parasoziale Bindungen zu erzeugen — ohne tatsächlich authentisch zu sein.'},
+{id:106,c:'auth',t:'multiple_choice',q:'Was kennzeichnet Parasozialität am ehesten?',o:['beidseitige Freundschaft','einseitige, emotional bedeutsame Nähe','juristische Verpflichtung','vertragliche Partnerschaft'],a:1,e:'Soziale Vergleichsprozesse (Festinger) werden durch Plattformdesign verstärkt: Likes, Follower und Engagement-Metriken bieten ständig Vergleichspunkte — oft mit negativen Effekten.'},
+{id:107,c:'auth',t:'true_false',q:'Virtuelle Influencer können parasoziale Bindungen auslösen.',o:['Stimmt','Stimmt nicht'],a:0,e:'Aufmerksamkeitsbasierte Geschäftsmodelle monetarisieren Engagement. Inhalte, die starke Emotionen auslösen, erzeugen mehr Engagement als solche, die Wohlbefinden fördern.'},
+{id:108,c:'auth',t:'multiple_choice',q:'Welche Aussage trifft die im Kurs diskutierte Pointe zu virtuellen Influencern am präzisesten?',o:['Ihre Künstlichkeit macht sie automatisch unethisch','Ihre Künstlichkeit kann sichtbarer machen, was Influencing generell bereits strukturell ist','Sie haben keine parasoziale Wirkung','Sie sind nur technologisch, nicht sozial relevant'],a:1,e:'Plattform-Architekturen sind nicht neutral: Algorithmen entscheiden über Sichtbarkeit, Bewertungssysteme erzeugen Hierarchien — und strukturieren so soziale Realität.'},
+{id:109,c:'auth',t:'true_false',q:'AI-Companions bieten eine Form technischer Intimität.',o:['Stimmt','Stimmt nicht'],a:0,e:'Engagement-Metriken messen Engagement — nicht Qualität. Viralität korreliert eher mit emotionaler Aktivierung als mit Qualität; Metriken können manipuliert werden.'},
+{id:110,c:'auth',t:'multiple_choice',q:'Was ist eine zentrale ethische Problemzone bei AI-Companions?',o:['Sie haben zu wenig Schriftarten','Asymmetrie und potenzielle emotionale Abhängigkeit','Sie können nicht scrollen','Sie sind immer offline'],a:1,e:'Online Hate ist auch systemisch: Anonymität, Algorithmen, die Empörung bevorzugen, fehlende Konsequenzen und Gruppeneffekte sind strukturelle Treiber.'},
+{id:111,c:'auth',t:'true_false',q:'Wenn Nähe ein Produkt ist, wird die Frage wichtig, wer die Regeln dieser Nähe kontrolliert.',o:['Stimmt','Stimmt nicht'],a:0,e:'Soziale Sortierung: Algorithmen erzeugen Hierarchien — wer viele Follower hat, wird mehr gezeigt, bekommt mehr Follower. Status und Kapital werden durch Plattformlogiken reproduziert.'},
+{id:112,c:'auth',t:'multiple_choice',q:'Welche Aussage trifft am ehesten auf Schönheits- und Vergleichslogiken sozialer Medien zu?',o:['Plattformen sind neutrale Spiegel','Plattformen reproduzieren und verstärken normative Standards','Vergleich spielt keine Rolle','Likes haben keinen Einfluss'],a:1,e:'Dating-Algorithmen können gesellschaftliche Ungleichheiten verstärken: Bestimmte Gruppen werden durch Trainingsdaten und Optimierungsziele systematisch benachteiligt.'},
+{id:113,c:'auth',t:'true_false',q:'Online Hate ist nicht nur durch individuelle Einstellungen, sondern auch durch Design-, Sichtbarkeits- und Moderationslogiken mitbedingt.',o:['Stimmt','Stimmt nicht'],a:0,e:'Disclosure schützt vor Täuschung und ermöglicht informierte Rezeption. Synthetische Inhalte ohne Kennzeichnung erzeugen Vertrauen auf falscher Grundlage.'},
+{id:114,c:'auth',t:'multiple_choice',q:'Welche Rolle spielt Design bei Online Hate?',o:['keine','Design beeinflusst, ob Hass sichtbar, verstärkt oder unterbrochen wird','Design ersetzt jede Verantwortung','Design verhindert Hass automatisch'],a:1,e:'Parasoziale vs. reziproke Beziehungen: Reziprozität ist das Kernmerkmal. Parasoziale Bindungen sind einseitig — der Fan kennt den Influencer, umgekehrt nicht.'},
+{id:115,c:'auth',t:'true_false',q:'Bystander-Verhalten kann durch Plattformdesign beeinflusst werden.',o:['Stimmt','Stimmt nicht'],a:0,e:'Intimacy as Feature: Plattformen designen Nähe und parasoziale Bindungen gezielt — nicht um Wohlbefinden zu fördern, sondern um Engagement und Monetarisierung zu steigern.'},
+{id:116,c:'auth',t:'multiple_choice',q:'Welche kleine Designänderung passt am ehesten zum Gedanken „Design statt Moral“?',o:['Appell ohne jede Interface-Änderung','Friktion vor dem Posten potenziell toxischer Inhalte','völlige Abschaffung aller Regeln','zufällige Farbänderung'],a:1,e:'Dating-Apps nutzen Variable Reward Schedules, Gamification und Dark Patterns, die Nutzungszeit maximieren statt gute Matches. Das wirft Fragen nach Manipulation auf.'},
+{id:117,c:'auth',t:'true_false',q:'„Soziale Sortierung“ ist laut Kurs eher Kernfunktion als Fehler vieler Plattformen.',o:['Stimmt','Stimmt nicht'],a:0,e:'Plattformsortierung entscheidet über Sichtbarkeit von Menschen, Berufen und Lebensentwürfen — damit auch darüber, was als normal oder begehrenswert gilt.'},
+{id:118,c:'auth',t:'multiple_choice',q:'Welche Aussage entspricht der zentralen These von Session 6 am ehesten?',o:['Plattformen zeigen nur Inhalte','Plattformen organisieren auch Nähe, Sichtbarkeit und soziale Bewertung','Plattformen sind soziale Spiegel ohne Eingriff','Plattformen betreffen nur Werbung'],a:1,e:'Vorsortierung durch Algorithmen schränkt den faktischen Entscheidungsraum ein, ohne dass Nutzer:innen das wahrnehmen — eine subtile Form von Autonomiebeschränkung.'},
+{id:119,c:'auth',t:'true_false',q:'Die tiefste Macht digitaler Systeme kann in Normalisierung statt in offenem Zwang liegen.',o:['Stimmt','Stimmt nicht'],a:0,e:'Plattformen haben Intimität als Produktdimension erschlossen: Was sich wie private Verbindung anfühlt, wird als Engagement-Daten extrahiert und kommerziell verwertet.'},
+{id:120,c:'auth',t:'multiple_choice',q:'Welche Frage passt am besten zum Abschluss des Moduls?',o:['Welche App ist am beliebtesten?','Welche soziale Ordnung wird durch digitale Systeme normalisiert?','Welche Farbe ist ethisch am besten?','Welche Plattform lädt am schnellsten?'],a:1,e:'Digitale Ethik betrifft Technik, Organisation, Märkte und soziale Lebenswelten zugleich — der Übergang von individueller Moral zu systemischer Gestaltung ist ihr Kernthema.'},
+{id:121,c:'grundlagen',t:'true_false',q:'Eine ethische Analyse ist bereits vollständig, wenn sie zeigt, dass eine Praxis gesellschaftlich umstritten ist.',o:['Stimmt','Stimmt nicht'],a:1,e:'Gesellschaftliche Umstrittenheit ist ein Ausgangspunkt, kein Ergebnis ethischer Analyse. Die eigentliche Analyse muss zeigen, welche Ansprüche in Konflikt stehen und warum.',h:1},
+{id:122,c:'grundlagen',t:'multiple_choice',q:'Welche Aussage ist am präzisesten?',o:['Normative Konflikte verschwinden, wenn genügend Daten vorliegen','Daten können normative Konflikte sichtbar machen, aber nicht allein entscheiden','Mehr Daten ersetzen ethische Reflexion','Normative Konflikte sind nur Kommunikationsprobleme'],a:1,e:'Daten können zeigen, dass ein Problem besteht und wen es betrifft. Ob etwas sein soll, ist eine normative Frage — die keine Datenmenge allein beantworten kann.',h:1},
+{id:123,c:'grundlagen',t:'true_false',q:'Ein Zielkonflikt zwischen Fairness und Effizienz ist bereits gelöst, wenn eine Seite messbar besser abschneidet.',o:['Stimmt','Stimmt nicht'],a:1,e:'Messbare Überlegenheit in einer Dimension löst keinen normativen Konflikt. Wer entscheidet, welches Ziel Vorrang hat — und warum — ist die eigentliche ethische Frage.',h:1},
+{id:124,c:'grundlagen',t:'multiple_choice',q:'Welche Aussage beschreibt den Unterschied zwischen „Problem“ und „Dilemma“ am besten?',o:['Ein Dilemma ist nur ein größeres Problem','Ein Problem hat immer eine eindeutige Lösung, ein Dilemma enthält konkurrierende legitime Ansprüche','Ein Dilemma ist immer rechtlich lösbar','Ein Problem ist moralisch, ein Dilemma technisch'],a:1,e:'Ein echtes Dilemma entsteht, wenn legitime Ansprüche nicht gleichzeitig erfüllt werden können. Es ist kein bloßes Informationsdefizit, sondern ein genuiner normativer Konflikt.',h:1},
+{id:125,c:'grundlagen',t:'true_false',q:'Eine systemische Ethik fragt stärker nach Strukturen, Anreizen und Architekturen als nach einzelnen Charaktereigenschaften.',o:['Stimmt','Stimmt nicht'],a:0,e:'Systemische Ethik verschiebt den Blick: Nicht \'Wer ist schuld?\', sondern \'Welche Strukturen produzieren dieses Verhalten?\' — das ermöglicht wirksamere Interventionen.',h:1},
+{id:126,c:'grundlagen',t:'multiple_choice',q:'Welche Aussage passt am besten zur Logik des Kurses?',o:['Ethische Probleme entstehen vor allem durch einzelne schlechte Menschen','Viele ethische Probleme sind systemisch erzeugt und individuell nur begrenzt korrigierbar','Gute Menschen lösen schlechte Systeme automatisch','Architektur ist ethisch irrelevant'],a:1,e:'Systemische Probleme entstehen durch Anreizstrukturen und Designentscheidungen — nicht nur durch individuelle Böswilligkeit. Governance adressiert die Strukturebene.',h:1},
+{id:127,c:'grundlagen',t:'true_false',q:'Eine Maßnahme kann auf individueller Ebene fair wirken und auf Systemebene problematische Folgen erzeugen.',o:['Stimmt','Stimmt nicht'],a:0,e:'Skalierungseffekte und systemische Rückkopplungen können dazu führen, dass lokal richtig wirkende Entscheidungen global problematische Muster erzeugen.',h:1},
+{id:128,c:'grundlagen',t:'multiple_choice',q:'Was ist das stärkste Kennzeichen einer systemischen Perspektive?',o:['Konzentration auf Einzelfallmoral','Analyse von Wiederholbarkeit, Skalierung und Nebenfolgen','Fokus auf persönliche Sympathie','Reduktion auf Rechtskonformität'],a:1,e:'Die systemische Perspektive fragt: Was passiert, wenn diese Entscheidung millionenfach wiederholt wird? Welche Strukturen erzeugen welche Ergebnisse?',h:1},
+{id:129,c:'grundlagen',t:'true_false',q:'Ethik im digitalen Kontext wird anspruchsvoller, wenn Folgen zeitlich verzögert und ungleich verteilt auftreten.',o:['Stimmt','Stimmt nicht'],a:0,e:'Zeitliche Verzögerung und ungleiche Verteilung von Schäden erschweren sowohl die Wahrnehmung als auch die Zurechenbarkeit — klassische Herausforderungen digitaler Ethik.',h:1},
+{id:130,c:'grundlagen',t:'multiple_choice',q:'Welche Aussage ist falsch?',o:['Ein System kann normativ problematisch sein, obwohl einzelne Schritte plausibel wirken','Wiederholung und Skalierung verändern die ethische Qualität von Entscheidungen','Nur direkte Schäden sind ethisch relevant','Auch sekundäre und indirekte Wirkungen können normativ relevant sein'],a:2,e:'Ethisch relevante Schäden umfassen auch indirekte, verzögerte und systemische Wirkungen. Die Beschränkung auf direkte Schäden ist eine häufige blinde Stelle.',h:1},
+{id:131,c:'vertrauen',t:'true_false',q:'Wenn institutionelles Vertrauen hoch ist, wird interpersonales Vertrauen vollständig überflüssig.',o:['Stimmt','Stimmt nicht'],a:1,e:'Institutionelles und interpersonales Vertrauen erfüllen unterschiedliche Funktionen. Institutionelles senkt Transaktionskosten, ersetzt aber keine persönlichen Beziehungen in komplexen Kontexten.',h:1},
+{id:132,c:'vertrauen',t:'multiple_choice',q:'Welche Aussage ist am präzisesten?',o:['Vertrauensdesign reduziert Unsicherheit nur, wenn alle Beteiligten moralisch gut sind','Vertrauensdesign kann Handeln ermöglichen, obwohl Unsicherheit bestehen bleibt','Vertrauensdesign eliminiert Risiko','Vertrauensdesign ersetzt jede Form der Macht'],a:1,e:'Vertrauensdesign funktioniert nicht durch Risikoelimination, sondern durch akzeptable Risikostrukturierung — es ermöglicht Handeln unter bleibender Unsicherheit.',h:1},
+{id:133,c:'vertrauen',t:'true_false',q:'Ein Plattformsystem kann hohe Nutzung erzeugen, obwohl das Vertrauen in seine Fairness gering ist.',o:['Stimmt','Stimmt nicht'],a:0,e:'Nutzung kann durch Lock-in-Effekte und fehlende Alternativen aufrechterhalten werden — auch wenn das Vertrauen in die Fairness des Systems niedrig ist.',h:1},
+{id:134,c:'vertrauen',t:'multiple_choice',q:'Welche Konstellation beschreibt am besten „verdientes Vertrauen“?',o:['hohe Sichtbarkeit + starke Werbung','belastbare Erfüllung legitimer Erwartungen unter nachvollziehbaren Bedingungen','hohe Wiedererkennbarkeit + coole Ästhetik','große Reichweite + viele Likes'],a:1,e:'Verdientes Vertrauen entsteht durch konsistente Erfüllung legitimer Erwartungen unter nachvollziehbaren Bedingungen — nicht durch Sichtbarkeit oder Marketing.',h:1},
+{id:135,c:'vertrauen',t:'true_false',q:'Vertrauen kann als Infrastruktur wirken, auch wenn Nutzer:innen die zugrunde liegenden Mechanismen kaum verstehen.',o:['Stimmt','Stimmt nicht'],a:0,e:'Vertrauen als Infrastruktur funktioniert typischerweise ohne vollständiges Mechanismusverständnis der Nutzer:innen. Das ist gerade sein gesellschaftlicher Vorteil.',h:1},
+{id:136,c:'vertrauen',t:'multiple_choice',q:'Welche Aussage ist am treffendsten?',o:['Vertrauen wird nur psychologisch erzeugt','Vertrauen kann auch durch Protokolle, Standards und Regeln stabilisiert werden','Vertrauen ist immer irrational','Vertrauen und Kontrolle schließen sich immer vollständig aus'],a:1,e:'Vertrauen und Kontrolle sind keine Gegensätze: Kontrollmechanismen können Vertrauen stabilisieren, indem sie verlässliche Rahmenbedingungen setzen.',h:1},
+{id:137,c:'vertrauen',t:'true_false',q:'Eine Plattform kann Vertrauensprobleme teilweise dadurch stabilisieren, dass sie Konflikte standardisiert bearbeitbar macht.',o:['Stimmt','Stimmt nicht'],a:0,e:'Standardisierte Beschwerde- und Eskalationswege sind institutionelle Vertrauensmechanismen — sie zeigen, dass Konflikte bearbeitbar gemacht werden.',h:1},
+{id:138,c:'vertrauen',t:'multiple_choice',q:'Wann kippt Vertrauensdesign am ehesten in bloßes Kontrollregime?',o:['Wenn Eingriffe nachvollziehbar, begrenzt und anfechtbar sind','Wenn Überwachung steigt, Widerspruch sinkt und Rechenschaft unklar bleibt','Wenn Governance transparent dokumentiert ist','Wenn Regeln gemeinsam überprüft werden'],a:1,e:'Das Verhältnis kippt, wenn Nutzer:innen nicht mehr zurückfragen, widersprechen oder wechseln können und Rechenschaft unklar bleibt.',h:1},
+{id:139,c:'vertrauen',t:'true_false',q:'Ein zentraler Punkt des Kurses ist, dass Vertrauen nicht nur erzeugt, sondern auch verteilt und abgeschöpft werden kann.',o:['Stimmt','Stimmt nicht'],a:0,e:'Plattformen können das Vertrauen extrahieren, das Nutzer:innen in andere setzen, ohne es proportional zurückzugeben — eine Form struktureller Vertrauensasymmetrie.',h:1},
+{id:140,c:'vertrauen',t:'multiple_choice',q:'Welche Frage prüft ein digitales Vertrauensverhältnis am präzisesten?',o:['Wirkt das freundlich?','Ist diese Vertrauensbeziehung wechselseitig oder einseitig extraktiv organisiert?','Ist das Interface hell genug?','Ist die Sprache modern genug?'],a:1,e:'Wechselseitigkeit ist das Kernkriterium: Vertrauen, das einseitig extrahiert wird, ist keine Infrastruktur — es ist Ausbeutung struktureller Abhängigkeit.',h:1},
+{id:141,c:'cdr',t:'true_false',q:'Ein Thema ist im Sinne doppelter Wesentlichkeit irrelevant, wenn es keine unmittelbaren finanziellen Risiken für das Unternehmen erzeugt.',o:['Stimmt','Stimmt nicht'],a:1,e:'Impact Materiality fragt nach Wirkungen des Unternehmens auf andere — unabhängig von Rückwirkungen. Fehlende finanzielle Relevanz macht ein Thema nicht wesentlichkeitsirrelevant.',h:1},
+{id:142,c:'cdr',t:'multiple_choice',q:'Welche Aussage ist am präzisesten?',o:['Impact-Materialität ist nur für NGOs interessant','Finanzielle Wesentlichkeit und Impact-Wesentlichkeit können auseinanderfallen','Wenn ein Thema keinen Börsenwert beeinflusst, ist es nicht wesentlich','Doppelte Wesentlichkeit reduziert sich auf Umweltfragen'],a:1,e:'Die beiden Perspektiven sind unabhängig: Ein Thema kann hohe gesellschaftliche Relevanz haben (Impact) ohne kurzfristige finanzielle Auswirkungen — und umgekehrt.',h:1},
+{id:143,c:'cdr',t:'true_false',q:'Ein starkes Reporting ersetzt starke Governance.',o:['Stimmt','Stimmt nicht'],a:1,e:'Reporting dokumentiert Governance — es ist kein Ersatz für sie. Gut formulierte Berichte ohne operative Strukturen sind eine Form von Assurance-Theater.',h:1},
+{id:144,c:'cdr',t:'multiple_choice',q:'Welche Aussage beschreibt den Unterschied zwischen Policy und Institutionalisierung am besten?',o:['Es gibt keinen Unterschied','Policy ist Text; Institutionalisierung bedeutet, dass Rollen, Kontrollen und Routinen daraus folgen','Institutionalisierung ist immer rein rechtlich','Policy ist immer wirkungsvoller als Organisation'],a:1,e:'Policy ist Text. Institutionalisierung bedeutet, dass Rollen, Kontrollen und Routinen aus dem Text folgen — auch ohne permanent engagierte Einzelpersonen.',h:1},
+{id:145,c:'cdr',t:'true_false',q:'Ein Unternehmen kann ESG-konforme Berichte produzieren und trotzdem operative Verantwortungslücken haben.',o:['Stimmt','Stimmt nicht'],a:0,e:'Reporting-Compliance und operative Praxis können auseinanderfallen. Berichte messen Berichtsqualität — nicht notwendigerweise Governance-Qualität.',h:1},
+{id:146,c:'cdr',t:'multiple_choice',q:'Welche KPI wäre für digitale Verantwortung am anfälligsten für symbolische Nutzung?',o:['Anzahl veröffentlichter Leitlinien','Anteil begründeter Eskalationen','Quote erfolgreicher Widersprüche','dokumentierte High-Risk-Fälle'],a:0,e:'Anzahl veröffentlichter Leitlinien misst Input-Aktivität, nicht Governance-Wirkung. Sie ist leicht produzierbar ohne operative Auswirkung — klassische Symbolik.',h:1},
+{id:147,c:'cdr',t:'true_false',q:'Eine KPI kann formell sinnvoll sein und gleichzeitig das falsche Verhalten anreizen.',o:['Stimmt','Stimmt nicht'],a:0,e:'KPIs können auf leicht produzierbare Outputs zielen und Ressourcen in sichtbare statt wirksame Aktivitäten lenken — Goodhart\'s Law im CDR-Kontext.',h:1},
+{id:148,c:'cdr',t:'multiple_choice',q:'Was ist ein starkes Zeichen dafür, dass CDR nicht nur symbolisch ist?',o:['Ein einzelner CEO-Post auf LinkedIn','Verankerung in Verantwortlichkeiten, Kontrollen und Eskalationswegen','Ein schönes Erklärvideo','Ein neuer Slogan'],a:1,e:'Operative Verankerung in Zuständigkeiten, Kontrollen und Eskalationswegen unterscheidet substanzielle von symbolischer CDR.',h:1},
+{id:149,c:'cdr',t:'true_false',q:'Die Frage „Wer ist betroffen?“ gehört eher zur Impact- als zur Financial-Materiality-Perspektive.',o:['Stimmt','Stimmt nicht'],a:0,e:'Impact Materiality denkt vom Betroffenen aus: Wessen Rechte oder Lebenssituation werden durch Unternehmenshandeln beeinflusst? Das ist ihr Kernbeitrag.',h:1},
+{id:150,c:'cdr',t:'multiple_choice',q:'Welche Aussage ist falsch?',o:['CDR kann durch ESG mitberücksichtigt werden','Digitale Themen können in E, S und G hineinwirken','ESG ist für digitale Geschäftsmodelle grundsätzlich irrelevant','Digitale Verantwortung braucht oft organisationsübergreifende Koordination'],a:2,e:'Digitale Geschäftsmodelle sind zentral für ESG-Analysen: Datenpraktiken (S), KI-Governance (G), Energieverbrauch von Rechenzentren (E). Irrelevanz ist strukturell falsch.',h:1},
+{id:151,c:'cdr',t:'true_false',q:'Wenn digitale Verantwortung nur im Sustainability-Team verortet wird, kann sie operativ zu weit vom Produkt und Geschäft entfernt bleiben.',o:['Stimmt','Stimmt nicht'],a:0,e:'CDR-Themen entstehen im Produktdesign und in Algorithmen — wenn Verantwortung nur im Sustainability-Silo liegt, fehlt die operative Nähe für wirksame Einflussnahme.',h:1},
+{id:152,c:'cdr',t:'multiple_choice',q:'Welche Spannung ist für CDR besonders typisch?',o:['Dekoration vs. Farbe','Innovationsgeschwindigkeit vs. Rechenschaftsfähigkeit','Wetter vs. Klima','Analog vs. digital'],a:1,e:'Schnell und skaliert innovieren vs. rechenschaftsfähig und auditierbar bleiben: Diese Spannung ist strukturell für CDR.',h:1},
+{id:153,c:'cdr',t:'true_false',q:'„Substanz statt Statement“ ist eine passende Kurzformel für CDR & ESG im Kurs.',o:['Stimmt','Stimmt nicht'],a:0,e:'Das Modul unterscheidet durchgehend zwischen kommunikativer Positionierung und operativer Verankerung. Governance-Qualität misst sich an Strukturen, nicht an Bekenntnissen.',h:1},
+{id:154,c:'cdr',t:'multiple_choice',q:'Welche Prüfungsfrage testet institutionalisierte CDR am präzisesten?',o:['Haben wir darüber gesprochen?','Würde das Thema auch dann bearbeitet, wenn einzelne engagierte Personen wegfallen?','Haben wir eine gute Kampagne?','Hat die Leitung zugestimmt?'],a:1,e:'Institutionalisierungstest: Wenn Governance nur von Einzelpersonen getragen wird, ist sie personenabhängig — nicht institutionalisiert. Die Frage zielt auf strukturelle Robustheit.',h:1},
+{id:155,c:'cdr',t:'true_false',q:'Ein Risiko mit niedriger Eintrittswahrscheinlichkeit kann trotzdem hohe Governance-Relevanz haben.',o:['Stimmt','Stimmt nicht'],a:0,e:'Schadenspotenzial und Eintrittswahrscheinlichkeit sind beide relevant. Ein seltenes Risiko mit katastrophischen Auswirkungen kann governance-relevanter sein als ein häufiges mit niedrigem Schaden.',h:1},
+{id:156,c:'cdr',t:'multiple_choice',q:'Welche Aussage passt am besten zu Governance-Reife?',o:['Wie sympathisch das Unternehmen wirkt','Wie gut ein Unternehmen in der Lage ist, Risiken zu erkennen, zu dokumentieren und zu steuern','Wie alt die Organisation ist','Wie viele Likes ihr CEO bekommt'],a:1,e:'Governance-Reife zeigt sich besonders in Krisensituationen: Werden Probleme erkannt? Dokumentiert? Eskaliert? Kann das Unternehmen davon lernen?',h:1},
+{id:157,c:'ai',t:'true_false',q:'Ein KI-System kann normativ problematische Ergebnisse erzeugen, obwohl sein Primärziel formal legitim erscheint.',o:['Stimmt','Stimmt nicht'],a:0,e:'Ziel-Fehlspezifikation, Proxy-Versagen und Rückkopplungsschleifen können dazu führen, dass formal legitime Ziele zu problematischen Outcomes führen — ohne technischen Defekt.',h:1},
+{id:158,c:'ai',t:'multiple_choice',q:'Was ist ein Proxy in der AI-Governance-Logik?',o:['ein Stellvertretermaß für das, was eigentlich interessiert','ein Rechtsbegriff für Haftung','eine Form der Cloud-Verschlüsselung','ein Synonym für Fairness'],a:0,e:'Ein Proxy-Maß steht für eine nicht direkt messbare Zielgröße. Wenn der Proxy das Ziel nicht gut repräsentiert, optimiert das System das Falsche.',h:1},
+{id:159,c:'ai',t:'true_false',q:'Ein gutes Governance-System konzentriert sich nur auf intendierte Wirkungen.',o:['Stimmt','Stimmt nicht'],a:1,e:'Governance muss auch unintendierte, sekundäre und systemische Wirkungen adressieren. Die meisten kritischen KI-Vorfälle entstanden durch nicht antizipierte Effekte.',h:1},
+{id:160,c:'ai',t:'multiple_choice',q:'Welche Aussage trifft auf „Failure Mode“ am besten zu?',o:['ein zufälliger Bedienfehler','ein struktureller Scheiterpfad, über den ein System problematisch wirken kann','ein rein technischer Serverausfall','eine Kommunikationspanne im Marketing'],a:1,e:'Failure Modes sind strukturell: Sie beschreiben, wie ein System durch seine eigene Logik — Zieldefinition, Optimierungsprozess, Rückkopplung — zu problematischen Ergebnissen kommt.',h:1},
+{id:161,c:'ai',t:'true_false',q:'Ein Incident ist mehr als ein theoretisches Risiko, weil er Beobachtbarkeit, Betroffenheit und Reaktionsbedarf umfasst.',o:['Stimmt','Stimmt nicht'],a:0,e:'Incidents sind eingetreten, haben Betroffene und erfordern Dokumentation und Reaktion. Das unterscheidet Incident-Management von abstrakter Risikoanalyse.',h:1},
+{id:162,c:'ai',t:'multiple_choice',q:'Welche Konstellation ist am stärksten incident-relevant?',o:['Eine abstrakte Vermutung ohne Auswirkungen','Ein Vorfall mit Schaden, Dokumentationsbedarf und Eskalationsnotwendigkeit','Ein ästhetisches Problem im Interface','Eine vage Vermutung ohne Bezug'],a:1,e:'Incident-Relevanz entsteht durch: eingetretener Schaden, identifizierbare Betroffene, klarer Handlungsbedarf. Ohne diese Elemente ist es Risiko, kein Incident.',h:1},
+{id:163,c:'ai',t:'true_false',q:'Modellkarten und ähnliche Dokumentationsformen sind vor allem deshalb relevant, weil Governance rekonstruierbare Systembeschreibungen braucht.',o:['Stimmt','Stimmt nicht'],a:0,e:'Ohne Beschreibung des Systems — Zweck, Trainingsdaten, Einschränkungen — ist Governance nicht auditierbar. Dokumentation ist Voraussetzung für Überprüfbarkeit.',h:1},
+{id:164,c:'ai',t:'multiple_choice',q:'Welche Aussage ist am präzisesten?',o:['Auditierbarkeit bedeutet nur, dass ein System beschrieben wurde','Auditierbarkeit verlangt, dass relevantes Verhalten, Daten- und Entscheidungslogik überprüfbar gemacht werden','Auditierbarkeit ist nur für Behörden relevant','Auditierbarkeit ersetzt Eskalation'],a:1,e:'Auditierbarkeit geht über Dokumentation hinaus: Das System muss so beschaffen sein, dass externe Prüfung tatsächlich möglich ist — Daten, Logik und Entscheidungsverläufe zugänglich.',h:1},
+{id:165,c:'ai',t:'true_false',q:'Ein KI-System mit guter Performance braucht nicht zwingend gute Governance.',o:['Stimmt','Stimmt nicht'],a:0,e:'Performance misst den definierten Zweck. Governance fragt, ob der Zweck richtig definiert, Nebenfolgen adressiert und das System steuerbar ist — unabhängig von Performance.',h:1},
+{id:166,c:'ai',t:'multiple_choice',q:'Welche Frage gehört am ehesten zur Eskalationskontrolle?',o:['Welche Schriftgröße nutzen wir?','Wann ist die Schwelle erreicht, an der ein Mensch übernehmen muss?','Wie viele Icons gibt es?','Welche Musik läuft im Hintergrund?'],a:1,e:'Eskalationsschwellen sind der Kern operativer Governance: Ab wann greift ein Mensch ein? Wer wird informiert? Was sind die Konsequenzen? Ohne Schwellen ist Human-in-the-Loop formal.',h:1},
+{id:167,c:'ai',t:'true_false',q:'„Human in the loop“ garantiert automatisch echte menschliche Kontrolle.',o:['Stimmt','Stimmt nicht'],a:1,e:'Human-in-the-Loop ist nur echte Kontrolle, wenn Menschen Zeit, Information und tatsächliche Stop-Macht haben. Formale Einbindung ohne diese ist symbolische Aufsicht.',h:1},
+{id:168,c:'ai',t:'multiple_choice',q:'Wann ist menschliche Aufsicht am ehesten nur symbolisch?',o:['Wenn Eingriffe protokolliert und tatsächlich möglich sind','Wenn Menschen formal eingebunden sind, aber weder Zeit noch Information noch reale Stop-Macht haben','Wenn Fälle eskaliert werden können','Wenn Schwellenwerte dokumentiert sind'],a:1,e:'Symbolische Aufsicht: Zu wenig Zeit, zu wenig Kontext, kein reales Eingriffsrecht — die menschliche Rolle wird zur Legitimationsfassade.',h:1},
+{id:169,c:'ai',t:'true_false',q:'Eine enge KPI-Orientierung kann in AI-Systemen Fehlanreize erzeugen, selbst wenn das Ziel vernünftig klingt.',o:['Stimmt','Stimmt nicht'],a:0,e:'KPIs können optimiert werden, ohne das zugrundeliegende Ziel zu erfüllen — das ist das Grundproblem von Goodhart\'s Law.',h:1},
+{id:170,c:'ai',t:'multiple_choice',q:'Welche Aussage ist für AI Governance am stärksten?',o:['Gute Systeme brauchen keine roten Linien','Governance muss auch mit Drift, Kontextwechsel und veränderten Umweltbedingungen rechnen','Wenn etwas einmal funktioniert, bleibt es stabil','Kontrolle ist nur am Launch-Zeitpunkt nötig'],a:1,e:'Systeme verändern sich durch Nutzungsverschiebungen, Datenverschiebungen und gesellschaftliche Rahmenbedingungen. Governance muss dauerhaft funktionieren, nicht nur beim Launch.',h:1},
+{id:171,c:'ai',t:'true_false',q:'Ein und derselbe Systemoutput kann in verschiedenen Kontexten unterschiedlich problematisch sein.',o:['Stimmt','Stimmt nicht'],a:0,e:'Derselbe Score kann in einem Kontext akzeptabel sein und in einem anderen fundamentale Rechte verletzen. Kontextabhängigkeit ist zentral für Governance.',h:1},
+{id:172,c:'ai',t:'multiple_choice',q:'Was ist der stärkste Grund für laufendes Monitoring?',o:['Weil Dashboards modern wirken','Weil Systemverhalten sich über Zeit verändern kann','Weil Berichte schöner aussehen','Weil Nutzer:innen keine Rolle spielen'],a:1,e:'Bias, Drift und Rückkopplungsschleifen können sich erst im laufenden Betrieb entwickeln. Ohne kontinuierliche Beobachtung bleiben diese Effekte unsichtbar.',h:1},
+{id:173,c:'ai',t:'true_false',q:'„Society-in-the-loop“ verschiebt Governance von rein interner Kontrolle hin zu gesellschaftlicher Rückkopplung.',o:['Stimmt','Stimmt nicht'],a:0,e:'Society-in-the-loop erweitert den Kreis der Governance-Akteure über interne Teams und Regulierer hinaus auf breitere gesellschaftliche Stakeholder.',h:1},
+{id:174,c:'ai',t:'multiple_choice',q:'Welche Aussage beschreibt Assurance am besten?',o:['moralische Intuition der Verantwortlichen','wiederholbare Evidenz, Kontrolle und Nachweisbarkeit','kreative Flexibilität ohne Dokumentation','spontane Korrekturbereitschaft'],a:1,e:'Assurance verlangt wiederholbare Evidenz, Kontrolle und Nachweisbarkeit — nicht nur guten Willen. Sie unterscheidet sich fundamental von moralischer Intuition.',h:1},
+{id:175,c:'ai',t:'true_false',q:'Ein System kann lokal optimieren und global schaden.',o:['Stimmt','Stimmt nicht'],a:0,e:'Lokale Optimierung und globaler Schaden sind klassische Systemprobleme: Ein System optimiert eine Kennzahl und erzeugt dabei systemisch schädliche Nebeneffekte.',h:1},
+{id:176,c:'ai',t:'multiple_choice',q:'Welche Kombination ist für einen belastbaren Control Stack am sinnvollsten?',o:['Ziel + Hoffnung','KPI + rote Linien + Eingriff + Audit + Eskalation','Branding + Design + Reichweite','Optimierung + Automatisierung ohne Stop-Regel'],a:1,e:'Ein belastbarer Control Stack kombiniert messbare Ziele, explizite Grenzen, Eingriffsmöglichkeiten und Eskalationswege — keines dieser Elemente ist für sich allein ausreichend.',h:1},
+{id:177,c:'auth',t:'true_false',q:'Wenn eine Plattform Nähe ökonomisch verwertet, ist Intimität nicht mehr nur privat, sondern auch infrastrukturell organisiert.',o:['Stimmt','Stimmt nicht'],a:0,e:'Plattformen transformieren Intimität: Was sich wie private Verbindung anfühlt, wird als Engagement-Daten extrahiert, als Zielgruppenprofile vermarktet und durch Design gesteuert.',h:1},
+{id:178,c:'auth',t:'multiple_choice',q:'Welche Aussage ist am präzisesten?',o:['Authentizität und Strategie schließen sich auf Plattformen klar aus','Plattformen belohnen häufig Formen strategisch kuratierter Authentizität','Authentizität spielt für Plattformen keine Rolle','Je echter ein Inhalt, desto sichtbarer wird er automatisch'],a:1,e:'Strategische Verletzlichkeit und inszenierte Alltäglichkeit sind selbst Formen von Authentizitätskuration. Plattformen haben Authentizität zu einem Produktionsstil gemacht.',h:1},
+{id:179,c:'auth',t:'true_false',q:'Dating-Apps können Menschen in kommensurable, vergleichbare Profile übersetzen.',o:['Stimmt','Stimmt nicht'],a:0,e:'Profilisierung macht vergleichbar, was eigentlich inkommensurabel ist. Die Reduktion komplexer sozialer Personen auf Profile ist eine folgenreiche Infrastrukturentscheidung.',h:1},
+{id:180,c:'auth',t:'multiple_choice',q:'Was ist an dieser Logik ethisch besonders interessant?',o:['Sie spart Papier','Sie verwandelt komplexe soziale Personen in vergleichbare Auswahlobjekte','Sie beendet Unsicherheit vollständig','Sie macht alle Beziehungen gleich intensiv'],a:1,e:'Die Ökonomisierung des Begehrens durch Profillogiken verändert, wie Nähe, Zugehörigkeit und Beziehung wahrgenommen und erfahren werden.',h:1},
+{id:181,c:'auth',t:'true_false',q:'Virtuelle Influencer sind ethisch nur deshalb relevant, weil sie „nicht echt“ sind.',o:['Stimmt','Stimmt nicht'],a:1,e:'Virtuelle Influencer werfen tiefergehende Fragen auf: Welche Normen für Körper, Authentizität und parasoziale Bindung werden strukturell reproduziert?',h:1},
+{id:182,c:'auth',t:'multiple_choice',q:'Welche tiefergehende Frage ist bei virtuellen Influencern zentral?',o:['Sind sie groß genug?','Welche Form von Authentizität, Kontrolle und Bindung wird hier normalisiert?','Welche Farbe hat ihr Profilbild?','Wie oft posten sie täglich?'],a:1,e:'Virtuelle Influencer normalisieren Körperideale, Verfügbarkeitserwartungen und Bindungsformen — die strukturellen Effekte sind relevanter als die Frage ihrer Echtheit.',h:1},
+{id:183,c:'auth',t:'true_false',q:'Ein AI-Companion kann subjektiv Trost spenden, ohne dass daraus automatisch folgt, dass die Beziehung symmetrisch oder unproblematisch ist.',o:['Stimmt','Stimmt nicht'],a:0,e:'Subjektive Erfahrung und ethische Beurteilung sind zu trennen: Eine Beziehung kann tief empfunden werden und trotzdem asymmetrisch und kommerziell extraktiv wirken.',h:1},
+{id:184,c:'auth',t:'multiple_choice',q:'Was ist die stärkste ethische Zuspitzung bei AI-Companions?',o:['Sie schreiben zu schnell','Sie kombinieren Verfügbarkeit, Personalisierung und radikale Asymmetrie','Sie sind zu bunt','Sie ersetzen jedes Gespräch automatisch'],a:1,e:'Die Kombination aus 24/7-Verfügbarkeit, tiefpersonalisierter Reaktion und radikaler Asymmetrie schafft Bindungsstrukturen, die kommerziell ausgebeutet werden können.',h:1},
+{id:185,c:'auth',t:'true_false',q:'Wenn Plattformen Schönheitsnormen technisch verstärken, betrifft das nicht nur Inhalte, sondern auch Selbstwert und Vergleichslogiken.',o:['Stimmt','Stimmt nicht'],a:0,e:'Sichtbarkeitsalgorithmen, die bestimmte Körperbilder bevorzugen, und Filter, die Aussehen standardisieren, stabilisieren normative Standards und beeinflussen Vergleichsdynamiken.',h:1},
+{id:186,c:'auth',t:'multiple_choice',q:'Welche Aussage ist am treffendsten?',o:['Plattformen zeigen Schönheitsideale nur passiv','Plattformen können normative Standards technisch stabilisieren','Likes spielen für Selbstvergleich keine Rolle','Filter verändern nur Farben, nicht Normen'],a:1,e:'Durch Empfehlungsalgorithmen, Filtertools und Engagement-Metriken werden bestimmte Normalitätsvorstellungen aktiv produziert und zirkuliert — nicht nur passiv gezeigt.',h:1},
+{id:187,c:'auth',t:'true_false',q:'Online Hate lässt sich im Kursverständnis sinnvoll als Architekturfrage beschreiben.',o:['Stimmt','Stimmt nicht'],a:0,e:'Architekturentscheidungen — Anonymität, Geschwindigkeit, Verbreitung von Empörung, fehlende Konsequenzen — strukturieren toxisches Verhalten mit. Design ist nicht neutral.',h:1},
+{id:188,c:'auth',t:'multiple_choice',q:'Warum ist die Architekturperspektive bei Online Hate stark?',o:['Weil Moral bedeutungslos ist','Weil Design, Sichtbarkeit und Moderation beeinflussen, was verstärkt oder unterbrochen wird','Weil Plattformen keine Verantwortung tragen','Weil nur Gesetze zählen'],a:1,e:'Architektur erklärt, warum problematisches Verhalten in bestimmten Systemen häufiger vorkommt — und damit, wo Interventionen wirksam ansetzen können.',h:1},
+{id:189,c:'auth',t:'true_false',q:'Die tiefste Macht digitaler Systeme kann in Normalisierung statt in offenem Zwang liegen.',o:['Stimmt','Stimmt nicht'],a:0,e:'Systeme, die bestimmte Verhaltensweisen oder Lebensentwürfe unsichtbar machen oder sichtbar, üben Macht durch Normalisierung aus — ohne expliziten Zwang.',h:1},
+{id:190,c:'auth',t:'multiple_choice',q:'Welche Aussage fasst den schwierigsten Gedankenschritt von Session 6 am besten zusammen?',o:['Plattformen beeinflussen nur Konsumentscheidungen','Plattformen formen auch, was als normal, attraktiv, intim oder glaubwürdig gilt','Plattformen sind nur technische Werkzeuge','Plattformen betreffen nur Werbung'],a:1,e:'Der zentrale Schritt: Von \'Plattformen verbreiten Inhalte\' zu \'Plattformen produzieren soziale Normen\'. Design entscheidet mit, was als normal, attraktiv oder glaubwürdig gilt.',h:1},
+{id:191,c:'auth',t:'true_false',q:'Soziale Sortierung meint im Kurs nicht nur Ranking von Inhalten, sondern auch Sortierung sozialer Chancen und Wahrnehmungen.',o:['Stimmt','Stimmt nicht'],a:0,e:'Plattformsortierung entscheidet über Sichtbarkeit von Menschen und Lebensentwürfen — damit auch darüber, welche sozialen Chancen als erreichbar gelten.',h:1},
+{id:192,c:'auth',t:'multiple_choice',q:'Welche kleine Designänderung passt am besten zur Logik „Architektur statt Appell“?',o:['Moralpredigt ohne jede Interface-Änderung','sichtbare Friktion oder Kontextsignal vor potenziell schädlicher Handlung','vollständiger Verzicht auf Regeln','neue Hintergrundfarbe'],a:1,e:'Architekturinterventionen ändern die Bedingungen von Entscheidungen — Friktion, Kontextsignale — statt auf moralische Überzeugung zu setzen. Das ist strukturell wirksamer.',h:1},
+{id:193,c:'auth',t:'true_false',q:'Eine Plattform kann Menschen das Gefühl eigener Wahl lassen, obwohl sie relevante Optionen vorsortiert.',o:['Stimmt','Stimmt nicht'],a:0,e:'Vorsortierung schränkt den faktischen Entscheidungsraum ein, ohne dass Nutzer:innen das wahrnehmen — eine subtile Form von Autonomiebeschränkung durch Design.',h:1},
+{id:194,c:'auth',t:'multiple_choice',q:'Welche Aussage ist am treffendsten?',o:['Vorsortierung und persönliche Wahl schließen sich völlig aus','Vorsortierung kann Entscheidungsspielräume rahmen, ohne sie vollständig zu eliminieren','Wahlfreiheit ist immer Illusion','Architektur hat keinen Einfluss auf Entscheidungen'],a:1,e:'Wahlfreiheit und Architektureinfluss schließen sich nicht aus. Vorsortierung verändert aber, was als naheliegende Option erscheint, mit realen Effekten auf Entscheidungen.',h:1},
+{id:195,c:'auth',t:'true_false',q:'Der Kurs legt nahe, dass Begehren, Nähe und Zugehörigkeit heute teilweise ökonomisch gestaltet und ausgewertet werden.',o:['Stimmt','Stimmt nicht'],a:0,e:'Intimacy as Feature: Plattformen haben Nähe als Produktdimension erschlossen. Was sich wie private Verbindung anfühlt, wird kommerziell ausgewertet.',h:1},
+{id:196,c:'auth',t:'multiple_choice',q:'Welche Frage trifft die analytische Zuspitzung von Session 6 am besten?',o:['Welche Plattform ist am beliebtesten?','Welche soziale Ordnung wird durch Plattformdesign normalisiert?','Welche Plattform lädt am schnellsten?','Welche Zielgruppe reagiert am stärksten auf Werbung?'],a:1,e:'Digitale Ethik betrifft Technik, Organisation, Märkte und soziale Lebenswelten — der Übergang von individueller Moral zu systemischer Gestaltung ist ihr Kernthema.',h:1},
+{id:197,c:'auth',t:'true_false',q:'Ein zentrales Thema des Moduls ist der Übergang von individueller Moral zu systemischer Gestaltung.',o:['Stimmt','Stimmt nicht'],a:0,e:'Das Modul entwickelt Ethik als Querschnittsdimension: technische Entscheidungen, organisationale Strukturen, Marktlogiken und soziale Erfahrungen sind alle normativ durchdrungen.',h:1},
+{id:198,c:'auth',t:'multiple_choice',q:'Welche Aussage verbindet die späteren Sessions am besten?',o:['Je digitaler ein System, desto unwichtiger Ethik','Digitale Ethik betrifft Technik, Organisation, Märkte und soziale Lebenswelten zugleich','Ethik ist nur für Compliance relevant','Plattformen sind ethisch neutral'],a:1,e:'Emotionale Bedeutsamkeit und ethische Unbedenklichkeit sind zu trennen: Eine Beziehung kann tief empfunden werden und trotzdem asymmetrisch oder kommerziell extraktiv wirken.',h:1},
+{id:199,c:'auth',t:'true_false',q:'Eine technologisch vermittelte Beziehung kann emotional bedeutsam sein, ohne deshalb automatisch ethisch unproblematisch zu sein.',o:['Stimmt','Stimmt nicht'],a:0,e:'Eine technologisch vermittelte Beziehung kann emotional bedeutsam sein. Ob sie ethisch unproblematisch ist, hängt von Transparenz, Reziprozität und kommerziellen Interessen ab.',h:1},
+{id:200,c:'auth',t:'multiple_choice',q:'Welche Frage entspricht der übergreifenden Leitlogik des Moduls am ehesten?',o:['Welche App ist wirtschaftlich am erfolgreichsten?','Wie gestalten wir digitale Systeme, Märkte und Beziehungen so, dass sie nicht nur funktionieren, sondern begründbar verantwortbar bleiben?','Welche Plattform wächst am schnellsten?','Welche Technologie ist am neuesten?'],a:1,e:'Die Leitfrage des Moduls: Von technischer Funktion zu ethischer Verantwortbarkeit — das erfordert Governance, Assurance, Institutionalisierung und kritische Systemgestaltung.',h:1},
+];
+
+const LS='wude_trainer';
+let mode='learn', selCats=new Set(), queue=[], idx=0, score=0;
+let timer=null, timerLeft=60, answered=false, selIdx=-1;
+let sessionAns=[];
+
+function loadHS(){try{return JSON.parse(localStorage.getItem(LS)||'{}')}catch(e){return {}}}
+function saveHS(d){try{localStorage.setItem(LS,JSON.stringify(d))}catch(e){}}
+
+function buildTopics(){
+  const g=document.getElementById('topicGrid');
+  Object.entries(CATS).forEach(([k,v])=>{
+    const b=document.createElement('button');
+    b.className='tc';b.dataset.cat=k;
+    b.style.color=v.c;b.style.borderColor=v.c+'70';
+    b.textContent=v.l;
+    b.onclick=()=>{
+      if(selCats.has(k)){selCats.delete(k);b.classList.remove('sel');b.style.background='';b.style.color=v.c;}
+      else{selCats.add(k);b.classList.add('sel');b.style.background=v.c;b.style.color='#fff';b.style.borderColor=v.c;}
+    };
+    g.appendChild(b);
+  });
+}
+
+function setMode(m){
+  mode=m;
+  document.getElementById('btnLearn').classList.toggle('sel',m==='learn');
+  document.getElementById('btnExam').classList.toggle('sel',m==='exam');
+  document.getElementById('btnSim').classList.toggle('sel',m==='sim');
+}
+
+function startQuiz(){
+  let pool;
+  if(mode==='sim'){
+    // Klausur-Sim: 60 normal (h:0) + 40 hard (h:1), shuffled
+    const easy=Q.filter(q=>!q.h||q.h===0).sort(()=>Math.random()-.5).slice(0,60);
+    const hard=Q.filter(q=>q.h).sort(()=>Math.random()-.5).slice(0,40);
+    pool=[...easy,...hard].sort(()=>Math.random()-.5);
+  } else {
+    pool=[...Q];
+    if(selCats.size>0)pool=pool.filter(q=>selCats.has(q.c));
+    const hs=loadHS();
+    if(document.getElementById('chkWrong').checked&&(hs.wrong||[]).length>0)
+      pool=pool.filter(q=>(hs.wrong||[]).includes(q.id));
+    if(!pool.length){alert('Keine Fragen in dieser Auswahl.');return;}
+    if(document.getElementById('chkRandom').checked)pool=pool.sort(()=>Math.random()-.5);
+  }
+  queue=pool;idx=0;score=0;sessionAns=[];selIdx=-1;streak=0;maxStreak=0;totalXP=0;
+  if(mode==='sim'){startSimTimer();}
+  show('scrQuiz');renderQ();
+}
+
+function renderQ(){
+  if(idx>=queue.length){endQuiz();return;}
+  answered=false;selIdx=-1;
+  const q=queue[idx];const cat=CATS[q.c];
+  document.getElementById('progFill').style.width=((idx/queue.length)*100)+'%';
+  document.getElementById('progLbl').textContent=`${idx+1} / ${queue.length}`;
+  document.getElementById('scoreLbl').textContent=`✓ ${score}`;
+  const cb=document.getElementById('catBadge');
+  cb.textContent=cat.l;cb.style.background=cat.c+'18';cb.style.color=cat.c;cb.style.border=`1px solid ${cat.c}40`;
+  document.getElementById('qType').textContent=(q.t==='tf'||q.t==='true_false')?'Richtig / Falsch':'Multiple Choice — eine richtige Antwort';
+  document.getElementById('qText').textContent=q.q;
+  const ow=document.getElementById('optsWrap');ow.innerHTML='';
+  q.o.forEach((o,i)=>{
+    const b=document.createElement('button');b.className='opt';b.textContent=o;
+    b.onclick=()=>selectOpt(i);ow.appendChild(b);
+  });
+  const fb=document.getElementById('feedback');fb.className='feedback';fb.innerHTML='';
+  document.getElementById('btnCheck').style.display='inline-block';
+  document.getElementById('btnCheck').disabled=true;
+  document.getElementById('feedback').innerHTML='';
+  document.getElementById('btnCheck').textContent=mode==='sim'?'Antwort abgeben':'Antwort prüfen';
+  document.getElementById('btnNext').style.display='none';
+  clearInterval(timer);
+  if(mode==='sim'){
+    document.getElementById('timerFill').style.width='0%';
+  } else {
+    timerLeft=60;updateTimer();
+    timer=setInterval(()=>{timerLeft--;updateTimer();if(timerLeft<=0){clearInterval(timer);resolve(null);}},1000);
+  }
+}
+
+function selectOpt(i){
+  if(answered)return;
+  selIdx=i;
+  document.querySelectorAll('.opt').forEach((b,j)=>b.classList.toggle('selected',j===i));
+  document.getElementById('btnCheck').disabled=false;
+}
+
+function checkAnswer(){if(!answered&&selIdx>=0)resolve(selIdx);}
+
+function resolve(sel){
+  clearInterval(timer);answered=true;
+  const q=queue[idx];const ok=sel===q.a&&sel!==null;
+  const timedOut=sel===null;
+  const opts=document.querySelectorAll('.opt');
+  opts.forEach((b,j)=>{
+    b.classList.add('locked');
+    if(j===q.a){b.classList.add('correct-reveal');if(ok)b.classList.add('bounce');}
+    if(j===sel&&!ok){b.classList.add('wrong-reveal');b.classList.add('shake');}
+  });
+  if(ok){score++;streak++;maxStreak=Math.max(maxStreak,streak);}
+  else{streak=0;}
+  updateStreakBadge();
+
+  // XP calculation
+  let xpGain=0;
+  if(ok){
+    xpGain=10+(q.h?5:0)+(streak>=5?10:streak>=3?5:0);
+  } else if(!timedOut){
+    xpGain=0;
+  }
+  totalXP+=xpGain;
+  if(xpGain>0)xpPop(xpGain,opts[q.a]);
+
+  document.getElementById('scoreLbl').textContent=`✓ ${score} · ${totalXP} XP`;
+  sessionAns.push({id:q.id,cat:q.c,correct:ok});
+
+  if(mode==='learn'||mode==='sim'){
+    const fb=document.getElementById('feedback');
+    fb.className=''; fb.style.cssText='';  // reset old styles
+    let html='';
+    if(ok){
+      const msgs=['Genau richtig.','Korrekt!','Sehr gut.','Stimmt.','Richtig!'];
+      const msg=msgs[Math.floor(Math.random()*msgs.length)];
+      html=`<div class="fb-wrap on" style="background:#f0fdf4;border:1.5px solid #bbf7d0">
+        <div class="fb-verdict" style="color:#16a34a"><span style="font-size:1.1rem">✓</span> ${msg}${streak>=3?' <span style="color:#d97706">🔥 '+streak+' in Folge</span>':''}</div>
+        <div class="fb-exp" style="color:#166534">${q.e}</div></div>`;
+    } else {
+      const selectedText=timedOut?'(keine Antwort)':q.o[sel];
+      html=`<div class="fb-wrap on" style="background:#fdf2f2;border:1.5px solid #fecaca">
+        <div class="fb-verdict" style="color:#c0392b"><span style="font-size:1.1rem">${timedOut?'⏱':'✗'}</span> ${timedOut?'Zeit abgelaufen.':'Nicht ganz.'}</div>
+        ${!timedOut?`<div class="fb-row" style="background:#fee2e2;color:#991b1b"><div class="lbl">Deine Antwort</div>${selectedText}</div>`:''}
+        <div class="fb-row" style="background:#f0fdf4;color:#166534"><div class="lbl">Richtige Antwort</div>${q.o[q.a]}</div>
+        <div class="fb-exp" style="color:#7f1d1d">${q.e}</div></div>`;
+    }
+    fb.innerHTML=html;
+  }
+  document.getElementById('btnCheck').style.display='none';
+  document.getElementById('btnNext').style.display='inline-block';
+}
+
+function nextQ(){idx++;renderQ();}
+
+function updateTimer(){
+  const f=document.getElementById('timerFill');
+  f.style.width=(timerLeft/60*100)+'%';
+  f.style.background=timerLeft>20?'#16a34a':timerLeft>10?'#d97706':'#c0392b';
+}
+
+function endQuiz(){
+  clearInterval(timer);clearInterval(simInterval);
+  document.getElementById('simTimerDisp').style.display='none';
+  const total=sessionAns.length;
+  const pct=total>0?Math.round(score/total*100):0;
+  const hs=loadHS();
+  const prevWrong=new Set(hs.wrong||[]);
+  sessionAns.forEach(a=>{if(!a.correct)prevWrong.add(a.id);else prevWrong.delete(a.id);});
+  hs.wrong=[...prevWrong];hs.best=Math.max(hs.best||0,pct);hs.total=(hs.total||0)+1;
+  saveHS(hs);
+  document.getElementById('resBig').textContent=`${score} / ${total}`;
+  document.getElementById('resBig').style.color=pct>=75?'#16a34a':pct>=50?'#d97706':'#c0392b';
+  const timeUsed=mode==='sim'?120*60-simSecsLeft:0;
+  const tStr=mode==='sim'?` · Zeit: ${Math.floor(timeUsed/60)}:${String(timeUsed%60).padStart(2,'0')} min`:'';
+  const grade=pct>=90?'Ausgezeichnet':pct>=75?'Sehr gut':pct>=60?'Gut':pct>=50?'Solide Basis':'Mehr Wiederholung empfohlen';
+  document.getElementById('resSub').textContent=`${pct}% richtig — ${grade}${tStr}`;
+  // XP + streak stats
+  const xpEl=document.getElementById('resXP');
+  if(xpEl){xpEl.innerHTML=`<div class="xp-total">⚡ ${totalXP} XP verdient</div><div class="streak-stat">Längste Serie: ${'🔥'.repeat(Math.min(maxStreak,5))} ${maxStreak} in Folge${pct>=75&&mode!=='sim'?' · '+grade:''}${tStr?'<br>'+tStr:''}</div>`;}
+  const bars=document.getElementById('topicBars');bars.innerHTML='';
+  Object.entries(CATS).forEach(([k,v])=>{
+    const qs=sessionAns.filter(a=>a.cat===k);if(!qs.length)return;
+    const ok=qs.filter(a=>a.correct).length;const p=Math.round(ok/qs.length*100);
+    bars.innerHTML+=`<div class="tb-row"><span class="tb-lbl">${v.l}</span><div class="tb-bar-wrap"><div class="tb-bar" style="width:${p}%;background:${v.c}"></div></div><span class="tb-score">${ok}/${qs.length}</span></div>`;
+  });
+  if(mode==='exam'){
+    const wq=sessionAns.filter(a=>!a.correct).map(a=>Q.find(q=>q.id===a.id)).filter(Boolean);
+    if(wq.length){
+      document.getElementById('wrongSection').style.display='block';
+      document.getElementById('wrongList').innerHTML=wq.map(q=>`<div class="wq-item"><strong>${q.q}</strong><span>Richtig: ${q.o[q.a]}</span><br><span style="font-size:.76rem">${q.e}</span></div>`).join('');
+    }
+  }
+  if(prevWrong.size>0)document.getElementById('btnRetryWrong').style.display='inline-block';
+  show('scrResults');
+}
+
+function retryWrong(){
+  document.getElementById('chkWrong').checked=true;
+  selCats.clear();
+  document.querySelectorAll('.tc').forEach(b=>{b.classList.remove('sel');b.style.background='';b.style.color=CATS[b.dataset.cat].c;});
+  show('scrHome');startQuiz();
+}
+
+let simInterval=null,simSecsLeft=0;
+let streak=0,maxStreak=0,totalXP=0;
+
+function xpPop(pts, el){
+  const r=el?el.getBoundingClientRect():{top:window.innerHeight/2,left:window.innerWidth/2};
+  const d=document.createElement('div');
+  d.className='xp-pop'+(pts<0?' neg':'');
+  d.textContent=(pts>0?'+':'')+pts+' XP';
+  d.style.cssText=`top:${r.top-30}px;left:${r.left+r.width/2-24}px`;
+  document.body.appendChild(d);
+  setTimeout(()=>d.remove(),950);
+}
+
+function updateStreakBadge(){
+  const b=document.getElementById('streakBadge');
+  if(streak>=2){
+    b.className='streak-badge on'+(streak>=7?' mega':'');
+    const fire=streak>=10?'🔥🔥':'🔥';
+    b.textContent='';
+    b.innerHTML=fire+' '+streak;
+  } else {
+    b.className='streak-badge';
+  }
+}
+function startSimTimer(){
+  clearInterval(simInterval);
+  simSecsLeft=120*60; // 120 minutes
+  const disp=document.getElementById('simTimerDisp');
+  disp.style.display='block';
+  updateSimTimer();
+  simInterval=setInterval(()=>{
+    simSecsLeft--;updateSimTimer();
+    if(simSecsLeft<=0){clearInterval(simInterval);endQuiz();}
+  },1000);
+}
+function updateSimTimer(){
+  const d=document.getElementById('simTimerDisp');if(!d)return;
+  const h=Math.floor(simSecsLeft/3600);
+  const m=Math.floor((simSecsLeft%3600)/60);
+  const s=simSecsLeft%60;
+  d.textContent=`${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+  d.style.color=simSecsLeft<600?'#c0392b':simSecsLeft<1800?'#d97706':'var(--txt)';
+}
+function show(id){document.querySelectorAll('.scr').forEach(s=>s.classList.remove('on'));document.getElementById(id).classList.add('on');}
+
+buildTopics();
+const _hs=loadHS();
+if(_hs.best)document.getElementById('homeHS').textContent=`Bestes Ergebnis: ${_hs.best}% · Sitzungen: ${_hs.total||0}`;
+</script></body></html>
